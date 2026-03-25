@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, X, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,12 @@ const Header = () => {
           <Link to="/login">
             <Button variant="ghost" size="icon">
               <User className="h-5 w-5" />
+            </Button>
+          </Link>
+
+          <Link to="/admin">
+            <Button variant="ghost" size="icon" title="Admin Dashboard">
+              <LayoutDashboard className="h-5 w-5" />
             </Button>
           </Link>
 
