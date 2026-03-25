@@ -34,9 +34,12 @@ function mapProduct(data: any): Product {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = localStorage.getItem("token");
+  
   const response = await fetch(`${BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       ...(options?.headers ?? {}),
     },
     ...options,
