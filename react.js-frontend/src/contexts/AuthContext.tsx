@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 interface User {
   id: number;
@@ -21,44 +21,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Lấy dữ liệu từ localStorage khi component mount
-  useEffect(() => {
+  // Function để cập nhật user từ localStorage
+  const updateUserFromStorage = useCallback(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
         const parsedUser = JSON.parse(userStr);
         setUser(parsedUser);
         setIsAdmin(parsedUser.role === "Admin");
-      } catch {
+      } catch (error) {
+        console.error("Failed to parse user from localStorage:", error);
         setUser(null);
         setIsAdmin(false);
       }
+    } else {
+      setUser(null);
+      setIsAdmin(false);
     }
-    setIsLoading(false);
   }, []);
+
+  // Lấy dữ liệu từ localStorage khi component mount
+  useEffect(() => {
+    updateUserFromStorage();
+    setIsLoading(false);
+  }, [updateUserFromStorage]);
 
   // Listen for auth-change events
   useEffect(() => {
     const handleAuthChange = () => {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        try {
-          const parsedUser = JSON.parse(userStr);
-          setUser(parsedUser);
-          setIsAdmin(parsedUser.role === "Admin");
-        } catch {
-          setUser(null);
-          setIsAdmin(false);
-        }
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
+      console.log("Auth change event detected");
+      updateUserFromStorage();
     };
 
     window.addEventListener("auth-change", handleAuthChange);
-    return () => window.removeEventListener("auth-change", handleAuthChange);
-  }, []);
+    
+    return () => {
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
+  }, [updateUserFromStorage]);
 
   const logout = () => {
     localStorage.removeItem("token");
