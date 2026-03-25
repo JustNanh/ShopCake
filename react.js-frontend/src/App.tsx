@@ -1,0 +1,57 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import CartDrawer from "@/components/CartDrawer";
+import AdminLayout from "@/components/AdminLayout";
+import Index from "./pages/Index";
+import MenuPage from "./pages/MenuPage";
+import ProductDetail from "./pages/ProductDetail";
+import CheckoutPage from "./pages/CheckoutPage";
+import AboutPage from "./pages/AboutPage";
+import LoginPage from "./pages/LoginPage";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
+import NotFound from "./pages/NotFound";
+
+const queryClient = new QueryClient();
+
+const CustomerLayout = ({ children }: { children: React.ReactNode }) => (
+  <>
+    <Header />
+    <main className="min-h-[60vh]">{children}</main>
+    <Footer />
+    <CartDrawer />
+  </>
+);
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<CustomerLayout><Index /></CustomerLayout>} />
+          <Route path="/menu" element={<CustomerLayout><MenuPage /></CustomerLayout>} />
+          <Route path="/product/:id" element={<CustomerLayout><ProductDetail /></CustomerLayout>} />
+          <Route path="/checkout" element={<CustomerLayout><CheckoutPage /></CustomerLayout>} />
+          <Route path="/about" element={<CustomerLayout><AboutPage /></CustomerLayout>} />
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+          <Route path="/admin/products" element={<AdminLayout><AdminProducts /></AdminLayout>} />
+          <Route path="/admin/orders" element={<AdminLayout><AdminOrders /></AdminLayout>} />
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
