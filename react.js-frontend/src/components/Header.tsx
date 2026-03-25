@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, LayoutDashboard } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthContext } from "@/contexts/AuthContext";
+import UserMenu from "@/components/UserMenu";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
@@ -77,11 +78,7 @@ const Header = () => {
             )}
           </Button>
 
-          <Link to="/login">
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
-            </Button>
-          </Link>
+          <UserMenu />
 
           {isAdmin && (
             <Link to="/admin">
