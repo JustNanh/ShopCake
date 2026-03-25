@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthContext } from "@/contexts/AuthContext";
+import LoginPromptDialog from "@/components/LoginPromptDialog";
 import { formatPrice } from "@/data/products";
 import { toast } from "sonner";
 
@@ -9,8 +11,10 @@ const shippingFee = 30000;
 
 const CheckoutPage = () => {
   const { items, totalPrice, clearCart } = useCartStore();
+  const { user } = useAuthContext();
   const navigate = useNavigate();
   const [coupon, setCoupon] = useState("");
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [form, setForm] = useState({
     name: "", phone: "", address: "", city: "", district: "",
     shipping: "standard", payment: "cod",
@@ -21,6 +25,13 @@ const CheckoutPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Kiểm tra xem user đã đăng nhập chưa
+    if (!user) {
+      setShowLoginPrompt(true);
+      return;
+    }
+
     if (!form.name || !form.phone || !form.address) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
@@ -42,7 +53,12 @@ const CheckoutPage = () => {
   const total = totalPrice() + shippingFee;
 
   return (
-    <div className="container py-8">
+    <>
+      <LoginPromptDialog 
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+      />
+      <div className="container py-8">
       <h1 className="font-display text-3xl font-bold mb-8">Thanh toán</h1>
 
       <form onSubmit={handleSubmit} className="grid md:grid-cols-5 gap-8">
@@ -152,7 +168,7 @@ const CheckoutPage = () => {
                 <span className="text-primary">{formatPrice(total)}</span>
               </div>
             </div>
-
+    </>
             <Button type="submit" size="lg" className="w-full">Đặt hàng</Button>
           </div>
         </div>
