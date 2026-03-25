@@ -2,7 +2,7 @@ import { LayoutDashboard, Package, ShoppingCart, ArrowLeft, LogOut } from "lucid
 import { NavLink } from "@/components/NavLink";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import useAuth from "@/hooks/use-auth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -28,7 +28,7 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuthContext();
   const [userName, setUserName] = useState("");
 
   // Update nama tùy theo user object từ useAuth hook
@@ -42,12 +42,7 @@ export function AdminSidebar() {
     path === "/admin" ? location.pathname === "/admin" : location.pathname.startsWith(path);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    
-    // Dispatch auth-change event để cập nhật Header
-    window.dispatchEvent(new Event("auth-change"));
-    
+    logout();
     navigate("/login");
   };
 

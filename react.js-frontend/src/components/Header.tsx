@@ -2,14 +2,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
-import useAuth from "@/hooks/use-auth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useAuthContext();
   const navigate = useNavigate();
   const totalItems = useCartStore((s) => s.totalItems());
   const toggleCart = useCartStore((s) => s.toggleCart);

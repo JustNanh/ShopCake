@@ -1,23 +1,15 @@
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import useAuth from "@/hooks/use-auth";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAdmin } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAdmin, isLoading } = useAuthContext();
 
-  useEffect(() => {
-    // Thêm delay nhỏ để đảm bảo hook useAuth đã hoàn thành
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 100);
 
-    return () => clearTimeout(timer);
-  }, []);
 
   if (isLoading) {
     return (
