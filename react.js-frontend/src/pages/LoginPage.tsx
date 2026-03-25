@@ -29,23 +29,25 @@ const LoginPage = () => {
         
         // Lưu token và thông tin user (Bao gồm cả role từ API trả về)
         localStorage.setItem("token", response.token);
-        localStorage.setItem("user", JSON.stringify({
+        const userData = {
           id: response.customerId,
           name: response.fullName,
           email: response.email,
-          role: response.role // Lấy role
-        }));
+          role: response.role
+        };
+        localStorage.setItem("user", JSON.stringify(userData));
 
         toast({
           title: "Đăng nhập thành công!",
           description: `Chào mừng ${response.fullName} quay lại 🍰`,
         });
         
-        // Dispatch auth-change event để cập nhật Header và các component khác
+        // Dispatch auth-change event để cập nhật Header ngay lập tức
+        // Phải dispatch trước navigate để AuthContext kịp cập nhật
         window.dispatchEvent(new Event("auth-change"));
         
-        // Đợi một chút để đảm bảo localStorage được flush trước khi navigate
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait a bit to ensure state is updated in all listeners before navigation
+        await new Promise(resolve => setTimeout(resolve, 150));
         
         // Kiểm tra role để chuyển hướng cho đúng
         if (response.role === "Admin") {
