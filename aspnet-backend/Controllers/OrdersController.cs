@@ -38,7 +38,18 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> Create([FromBody] OrderCreateDto dto)
     {
         var totalAmount = dto.Items.Sum(i => i.Quantity * i.PriceAtPurchase);
-        var order = new Order { CustomerId = dto.CustomerId, TotalAmount = totalAmount };
+        var order = new Order 
+        { 
+            CustomerId = dto.CustomerId, 
+            TotalAmount = totalAmount,
+            RecipientName = dto.RecipientName,
+            RecipientPhone = dto.RecipientPhone,
+            ShippingAddress = dto.ShippingAddress,
+            City = dto.City,
+            District = dto.District,
+            ShippingMethod = dto.ShippingMethod,
+            PaymentMethod = dto.PaymentMethod
+        };
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
 

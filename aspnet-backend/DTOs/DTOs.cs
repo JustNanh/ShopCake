@@ -13,7 +13,7 @@ public record ProductUpdateDto(int? CategoryId, string ProductName, string? Flav
 
 // Order
 public record OrderItemDto(int ProductId, int Quantity, decimal PriceAtPurchase);
-public record OrderCreateDto(int CustomerId, List<OrderItemDto> Items);
+public record OrderCreateDto(int CustomerId, List<OrderItemDto> Items, string? RecipientName, string? RecipientPhone, string? ShippingAddress, string? City, string? District, string? ShippingMethod, string? PaymentMethod);
 public record OrderStatusDto(string Status);
 
 // Category

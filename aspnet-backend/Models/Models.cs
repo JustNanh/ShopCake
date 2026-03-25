@@ -49,6 +49,15 @@ public class Order
     public DateTime OrderDate { get; set; } = DateTime.Now;
     [Required, Column(TypeName = "decimal(10,2)")] public decimal TotalAmount { get; set; }
     [Required, MaxLength(50)] public string Status { get; set; } = "Pending";
+    
+    // Thông tin giao hàng
+    [MaxLength(100)] public string? RecipientName { get; set; }
+    [MaxLength(20)] public string? RecipientPhone { get; set; }
+    [MaxLength(255)] public string? ShippingAddress { get; set; }
+    [MaxLength(50)] public string? City { get; set; }
+    [MaxLength(50)] public string? District { get; set; }
+    [MaxLength(50)] public string? ShippingMethod { get; set; }
+    [MaxLength(50)] public string? PaymentMethod { get; set; }
 
     [ForeignKey("CustomerId")] public Customer? Customer { get; set; }
     public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();

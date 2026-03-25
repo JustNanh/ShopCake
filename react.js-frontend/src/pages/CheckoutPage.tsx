@@ -5,6 +5,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useAuthContext } from "@/contexts/AuthContext";
 import LoginPromptDialog from "@/components/LoginPromptDialog";
 import { formatPrice } from "@/data/products";
+import { createOrder } from "@/lib/api";
 import { toast } from "sonner";
 
 const shippingFee = 30000;
@@ -15,6 +16,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const [coupon, setCoupon] = useState("");
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
     name: "", phone: "", address: "", city: "", district: "",
     shipping: "standard", payment: "cod",
@@ -22,8 +24,7 @@ const CheckoutPage = () => {
 
   const handleChange = (field: string, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
-
-  const handleSubmit = (e: React.FormEvent) => {
+async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Kiểm tra xem user đã đăng nhập chưa
@@ -36,8 +37,43 @@ const CheckoutPage = () => {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
-    toast.success("Đặt hàng thành công! Cảm ơn bạn 🎉");
-    clearCart();
+
+    try {
+      setIsLoading(true);
+
+      // Tạo payload order để gửi lên API
+      const orderPayload = {
+        customerId: user.id,
+        items: items.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          priceAtPurchase: item.product.price,
+        })),
+        recipientName: form.name,
+        recipientPhone: form.phone,
+        shippingAddress: form.address,
+        city: form.city,
+        district: form.district,
+        shippingMethod: form.shipping,
+        paymentMethod: form.payment,
+      };
+
+      // Gọi API để lưu order vào SQL Server
+      const response = await createOrder(orderPayload);
+
+      toast.success(`Đặt hàng thành công! Mã đơn hàng: ${response.orderId} 🎉`);
+      
+      // Clear cart sau khi thành công
+      clearCart();
+      
+      // Navigate về trang chủ
+      navigate("/");
+    } catch (error: any) {
+      console.error("Order error:", error);
+      toast.error(error.message || "Lỗi khi đặt hàng, vui lòng thử lại");
+    } finally {
+      setIsLoading(false);
+    }
     navigate("/");
   };
 
@@ -142,7 +178,9 @@ const CheckoutPage = () => {
                 <div key={item.product.id} className="flex gap-3">
                   <img src={item.product.image} alt={item.product.name} className="h-14 w-14 rounded-md object-cover" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.product.name}</p>
+                    <p className="text-sm font-medium truncate disabled={isLoading}>
+              {isLoading ? "Đang xử lý..." : "Đặt hàng"}
+            roduct.name}</p>
                     <p className="text-xs text-muted-foreground">x{item.quantity}</p>
                   </div>
                   <p className="text-sm font-medium">{formatPrice(item.product.price * item.quantity)}</p>
