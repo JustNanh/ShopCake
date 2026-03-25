@@ -168,12 +168,13 @@ const CheckoutPage = () => {
                 <span className="text-primary">{formatPrice(total)}</span>
               </div>
             </div>
-    </>
+
             <Button type="submit" size="lg" className="w-full">Đặt hàng</Button>
           </div>
         </div>
       </form>
     </div>
+    </>
   );
 };
 
