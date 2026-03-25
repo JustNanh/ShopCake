@@ -55,7 +55,15 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Email hoặc mật khẩu không đúng." });
 
         var token = GenerateJwt(customer);
-        return Ok(new AuthResponseDto(token, customer.CustomerId, customer.FullName, customer.Email));
+        
+        // SỬA: Truyền thêm customer.Role vào DTO trả về (nếu null thì gán mặc định là "Customer")
+        return Ok(new AuthResponseDto(
+            token, 
+            customer.CustomerId, 
+            customer.FullName, 
+            customer.Email, 
+            customer.Role ?? "Customer"
+        ));
     }
 
     private string GenerateJwt(Customer customer)

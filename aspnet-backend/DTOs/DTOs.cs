@@ -3,7 +3,9 @@ namespace QLBN.Api.DTOs;
 // Auth
 public record RegisterDto(string FullName, string Email, string Password, string? Phone, string? Address, string? Gender);
 public record LoginDto(string Email, string Password);
-public record AuthResponseDto(string Token, int CustomerId, string FullName, string Email);
+
+// SỬA: Thêm "string Role" vào cuối
+public record AuthResponseDto(string Token, int CustomerId, string FullName, string Email, string Role);
 
 // Product
 public record ProductCreateDto(int? CategoryId, string ProductName, string? Flavor, string? Description, decimal Price, string? ImageUrl);

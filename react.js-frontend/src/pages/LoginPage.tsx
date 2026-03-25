@@ -27,19 +27,26 @@ const LoginPage = () => {
         // Gọi API Đăng nhập
         const response = await login(email, password);
         
-        // Lưu token và thông tin user vào localStorage để duy trì đăng nhập
+        // SỬA: Lưu token và thông tin user (Bao gồm cả role từ API trả về)
         localStorage.setItem("token", response.token);
         localStorage.setItem("user", JSON.stringify({
           id: response.customerId,
           name: response.fullName,
-          email: response.email
+          email: response.email,
+          role: response.role // Lấy role
         }));
 
         toast({
           title: "Đăng nhập thành công!",
           description: `Chào mừng ${response.fullName} quay lại 🍰`,
         });
-        navigate("/"); // Trở về trang chủ
+        
+        // SỬA: Kiểm tra role để chuyển hướng cho đúng
+        if (response.role === "Admin") {
+          navigate("/admin"); // Chuyển sang trang Admin
+        } else {
+          navigate("/"); // Chuyển sang trang Chủ
+        }
         
       } else {
         // Gọi API Đăng ký
