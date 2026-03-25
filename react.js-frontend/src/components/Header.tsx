@@ -1,30 +1,18 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X, LayoutDashboard } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
+import useAuth from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const totalItems = useCartStore((s) => s.totalItems());
   const toggleCart = useCartStore((s) => s.toggleCart);
-
-  // Kiểm tra role Admin từ localStorage
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setIsAdmin(user.role === "Admin");
-      } catch {
-        setIsAdmin(false);
-      }
-    }
-  }, []);
 
   const navItems = [
     { label: "Trang chủ", path: "/" },

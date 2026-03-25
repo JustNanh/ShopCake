@@ -1,7 +1,8 @@
 import { LayoutDashboard, Package, ShoppingCart, ArrowLeft, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import useAuth from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -27,20 +28,15 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [userName, setUserName] = useState("");
 
-  // Lấy tên người dùng từ localStorage
+  // Update nama tùy theo user object từ useAuth hook
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setUserName(user.name);
-      } catch {
-        setUserName("");
-      }
+    if (user?.name) {
+      setUserName(user.name);
     }
-  }, []);
+  }, [user]);
 
   const isActive = (path: string) =>
     path === "/admin" ? location.pathname === "/admin" : location.pathname.startsWith(path);
@@ -48,6 +44,10 @@ export function AdminSidebar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    
+    // Dispatch auth-change event để cập nhật Header
+    window.dispatchEvent(new Event("auth-change"));
+    
     navigate("/login");
   };
 

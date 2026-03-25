@@ -41,6 +41,9 @@ const LoginPage = () => {
           description: `Chào mừng ${response.fullName} quay lại 🍰`,
         });
         
+        // Dispatch auth-change event để cập nhật Header và các component khác
+        window.dispatchEvent(new Event("auth-change"));
+        
         // SỬA: Kiểm tra role để chuyển hướng cho đúng
         if (response.role === "Admin") {
           navigate("/admin"); // Chuyển sang trang Admin

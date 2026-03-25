@@ -1,38 +1,22 @@
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import useAuth from "@/hooks/use-auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAdmin } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // Kiểm tra token và role từ localStorage
-    const token = localStorage.getItem("token");
-    const userStr = localStorage.getItem("user");
-
-    if (!token || !userStr) {
-      setIsAuthorized(false);
+    // Thêm delay nhỏ để đảm bảo hook useAuth đã hoàn thành
+    const timer = setTimeout(() => {
       setIsLoading(false);
-      return;
-    }
+    }, 100);
 
-    try {
-      const user = JSON.parse(userStr);
-      // Chỉ cho phép Admin role truy cập
-      if (user.role === "Admin") {
-        setIsAuthorized(true);
-      } else {
-        setIsAuthorized(false);
-      }
-    } catch {
-      setIsAuthorized(false);
-    }
-
-    setIsLoading(false);
+    return () => clearTimeout(timer);
   }, []);
 
   if (isLoading) {
@@ -46,7 +30,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!isAuthorized) {
+  if (!isAdmin) {
     return <Navigate to="/login" replace />;
   }
 
