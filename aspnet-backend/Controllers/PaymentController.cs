@@ -44,27 +44,20 @@ public class PaymentController : ControllerBase
         {
             OrderId = order.OrderId,
             Amount = order.TotalAmount,
-            PaymentMethod = dto.PaymentMethod, // VNPay, Momo, Zalopay
+            PaymentMethod = dto.PaymentMethod, // BankTransfer
             PaymentDate = DateTime.Now
         };
         _db.Payments.Add(payment);
         await _db.SaveChangesAsync();
 
-        // Tạo URL thanh toán dựa trên phương thức
-        var paymentUrl = dto.PaymentMethod switch
-        {
-            "VNPay" => GenerateVNPayUrl(order, payment),
-            "Momo" => GenerateMomoUrl(order, payment),
-            "Zalopay" => GenerateZaloPayUrl(order, payment),
-            _ => throw new ArgumentException("Phương thức thanh toán không hợp lệ")
-        };
+        // Chỉ hỗ trợ chuyển khoản ngân hàng
+        if (dto.PaymentMethod != "BankTransfer")
+            return BadRequest(new { message = "Chỉ hỗ trợ thanh toán chuyển khoản ngân hàng." });
 
         return Ok(new
         {
-            message = "Khởi tạo giao dịch thành công!",
-            paymentId = payment.PaymentId,
-            paymentUrl = paymentUrl,
-            qrCode = GenerateQRCode(order.OrderId, order.TotalAmount, dto.PaymentMethod)
+            message = "Khởi tạo đơn hàng thành công! Vui lòng chuyển khoản theo thông tin được cung cấp.",
+            paymentId = payment.PaymentId
         });
     }
 
