@@ -101,6 +101,7 @@ public class Review
     [ForeignKey("ProductId")] public Product? Product { get; set; }
 }
 
+[Index(nameof(Year), nameof(Month), IsUnique = true)]
 public class SalesStats
 {
     [Key] public int StatsId { get; set; }
@@ -110,8 +111,4 @@ public class SalesStats
     [Required] public int TotalOrders { get; set; } = 0;
     [Required] public int DeliveredOrders { get; set; } = 0;
     public DateTime LastUpdated { get; set; } = DateTime.Now;
-
-    // Composite unique key để tránh duplicate
-    [Index("IX_SalesStats_YearMonth", IsUnique = true)]
-    public string YearMonth => $"{Year}-{Month:D2}";
 }
