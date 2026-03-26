@@ -82,7 +82,6 @@ const AdminDashboard = () => {
     status: statusLabel[order.status] || order.status,
   }));
 
-const AdminDashboard = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-display font-bold text-foreground">Tổng quan</h1>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProducts } from "@/lib/api";
+import { getProducts, updateProduct, deleteProduct } from "@/lib/api";
 import { Product, formatPrice } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,40 +68,59 @@ const AdminProducts = () => {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.price) return;
-    if (editProduct) {
-      setProductList((prev) =>
-        prev.map((p) =>
-          p.id === editProduct.id
-            ? { ...p, name: form.name, price: Number(form.price), category: form.category, description: form.description }
-            : p
-        )
-      );
-      toast({ title: "Đã cập nhật sản phẩm" });
-    } else {
-      const newProduct: Product = {
-        id: Date.now(),
-        name: form.name,
-        price: Number(form.price),
-        image: "https://via.placeholder.com/300x300?text=No+Image",
-        category: form.category,
-        flavor: "cream",
-        rating: 0,
-        reviews: 0,
-        description: form.description,
-        ingredients: "",
-        storage: "",
-      };
-      setProductList((prev) => [...prev, newProduct]);
-      toast({ title: "Đã thêm sản phẩm mới" });
+    try {
+      if (editProduct) {
+        await updateProduct(editProduct.id, {
+          productName: form.name,
+          price: Number(form.price),
+          flavor: "cream", // or from form if added
+          description: form.description,
+          imageUrl: "", // or from form
+        });
+        setProductList((prev) =>
+          prev.map((p) =>
+            p.id === editProduct.id
+              ? { ...p, name: form.name, price: Number(form.price), category: form.category, description: form.description }
+              : p
+          )
+        );
+        toast({ title: "Đã cập nhật sản phẩm" });
+      } else {
+        // For create, need createProduct API, but not added yet
+        const newProduct: Product = {
+          id: Date.now(),
+          name: form.name,
+          price: Number(form.price),
+          image: "https://via.placeholder.com/300x300?text=No+Image",
+          category: form.category,
+          flavor: "cream",
+          rating: 0,
+          reviews: 0,
+          description: form.description,
+          ingredients: "",
+          storage: "",
+        };
+        setProductList((prev) => [...prev, newProduct]);
+        toast({ title: "Đã thêm sản phẩm mới (local)" });
+      }
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Lưu sản phẩm thất bại", error);
+      toast({ title: "Lưu thất bại", description: String(error), variant: "destructive" });
     }
-    setDialogOpen(false);
   };
 
-  const handleDelete = (id: number) => {
-    setProductList((prev) => prev.filter((p) => p.id !== id));
-    toast({ title: "Đã xóa sản phẩm", variant: "destructive" });
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteProduct(id);
+      setProductList((prev) => prev.filter((p) => p.id !== id));
+      toast({ title: "Đã xóa sản phẩm", variant: "destructive" });
+    } catch (error) {
+      console.error("Xóa sản phẩm thất bại", error);
+      toast({ title: "Xóa thất bại", description: String(error), variant: "destructive" });
+    }
   };
 
   const categoryLabel: Record<string, string> = {

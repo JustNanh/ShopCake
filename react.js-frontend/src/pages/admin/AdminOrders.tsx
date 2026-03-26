@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatPrice } from "@/data/products";
-import { getOrders } from "@/lib/api";
+import { getOrders, updateOrderStatus } from "@/lib/api";
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,11 +32,22 @@ const statuses = ["Đang xử lý", "Đang giao", "Đã giao", "Đã hủy"];
 const mapStatusToUI = (status: string) => {
   switch (status) {
     case "Processing": return "Đang xử lý";
+    case "Shipped": return "Đang giao";
     case "Delivered": return "Đã giao";
     case "Cancelled": return "Đã hủy";
     case "Pending":
     default:
       return "Đang xử lý";
+  }
+};
+
+const mapStatusToAPI = (uiStatus: string) => {
+  switch (uiStatus) {
+    case "Đang xử lý": return "Processing";
+    case "Đang giao": return "Shipped";
+    case "Đã giao": return "Delivered";
+    case "Đã hủy": return "Cancelled";
+    default: return "Pending";
   }
 };
 
@@ -76,9 +87,16 @@ const AdminOrders = () => {
     return matchSearch && matchStatus;
   });
 
-  const updateStatus = (id: string, newStatus: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
-    toast({ title: `Đơn ${id} đã chuyển sang "${newStatus}"` });
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      const apiStatus = mapStatusToAPI(newStatus);
+      await updateOrderStatus(Number(id), apiStatus);
+      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus, rawStatus: apiStatus } : o)));
+      toast({ title: `Đơn ${id} đã chuyển sang "${newStatus}"` });
+    } catch (error) {
+      console.error("Cập nhật trạng thái thất bại", error);
+      toast({ title: "Cập nhật thất bại", description: String(error), variant: "destructive" });
+    }
   };
 
   return (
@@ -142,11 +160,6 @@ const AdminOrders = () => {
                   <TableCell>{formatPrice(o.total)}</TableCell>
                   <TableCell className="text-sm">{o.date}</TableCell>
                   <TableCell>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[o.status]}`}>
-                      {o.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
                     <Select value={o.status} onValueChange={(v) => updateStatus(o.id, v)}>
                       <SelectTrigger className="w-32 h-8 text-xs">
                         <SelectValue />
@@ -157,6 +170,9 @@ const AdminOrders = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {/* Có thể thêm nút khác nếu cần */}
                   </TableCell>
                 </TableRow>
               ))

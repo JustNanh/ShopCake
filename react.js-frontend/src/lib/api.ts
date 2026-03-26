@@ -78,8 +78,28 @@ export async function getProductById(id: number): Promise<Product> {
   return mapProduct(data);
 }
 
+export async function updateProduct(id: number, product: { categoryId?: number; productName: string; flavor?: string; description?: string; price: number; imageUrl?: string }): Promise<any> {
+  return await request<any>(`/api/products/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(product),
+  });
+}
+
+export async function deleteProduct(id: number): Promise<any> {
+  return await request<any>(`/api/products/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getOrders(): Promise<any[]> {
   return await request<any[]>('/api/orders');
+}
+
+export async function updateOrderStatus(orderId: number, status: string): Promise<any> {
+  return await request<any>(`/api/orders/${orderId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function createOrder(order: { customerId: number; items: Array<{ productId: number; quantity: number; priceAtPurchase: number; }>; }): Promise<any> {
