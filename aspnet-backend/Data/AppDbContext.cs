@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<OrderDetail> Order_Details { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public DbSet<SalesStats> SalesStats { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -86,6 +87,17 @@ public class AppDbContext : DbContext
             e.Property(x => x.Rating).HasColumnName("rating");
             e.Property(x => x.Comment).HasColumnName("comment");
             e.Property(x => x.ReviewDate).HasColumnName("review_date");
+        });
+
+        modelBuilder.Entity<SalesStats>(e => {
+            e.Property(x => x.StatsId).HasColumnName("stats_id");
+            e.Property(x => x.Year).HasColumnName("year");
+            e.Property(x => x.Month).HasColumnName("month");
+            e.Property(x => x.TotalRevenue).HasColumnName("total_revenue");
+            e.Property(x => x.TotalOrders).HasColumnName("total_orders");
+            e.Property(x => x.DeliveredOrders).HasColumnName("delivered_orders");
+            e.Property(x => x.LastUpdated).HasColumnName("last_updated");
+            e.HasIndex(x => new { x.Year, x.Month }).IsUnique();
         });
 
         // Cascades

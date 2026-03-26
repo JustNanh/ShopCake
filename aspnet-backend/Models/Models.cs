@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace QLBN.Api.Models;
 
@@ -98,4 +99,19 @@ public class Review
 
     [ForeignKey("CustomerId")] public Customer? Customer { get; set; }
     [ForeignKey("ProductId")] public Product? Product { get; set; }
+}
+
+public class SalesStats
+{
+    [Key] public int StatsId { get; set; }
+    [Required] public int Year { get; set; }
+    [Required] public int Month { get; set; }
+    [Required, Column(TypeName = "decimal(10,2)")] public decimal TotalRevenue { get; set; } = 0;
+    [Required] public int TotalOrders { get; set; } = 0;
+    [Required] public int DeliveredOrders { get; set; } = 0;
+    public DateTime LastUpdated { get; set; } = DateTime.Now;
+
+    // Composite unique key để tránh duplicate
+    [Index("IX_SalesStats_YearMonth", IsUnique = true)]
+    public string YearMonth => $"{Year}-{Month:D2}";
 }
