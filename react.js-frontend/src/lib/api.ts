@@ -23,14 +23,28 @@ function mapProduct(data: any): Product {
   let normalizedImage: string;
   
   if (!imageUrl || imageUrl.trim() === "") {
-    // Nếu imageUrl trống, dùng placeholder
     normalizedImage = "https://via.placeholder.com/300x300?text=No+Image";
-  } else if (imageUrl.startsWith("http")) {
-    // Nếu là URL đầy đủ (http/https), dùng trực tiếp
-    normalizedImage = imageUrl;
   } else {
-    // Nếu là đường dẫn tương đối, thêm BASE_URL
-    normalizedImage = `${BASE_URL}/${imageUrl.replace(/^\/+/, "")}`;
+    const asPath = imageUrl.trim().replace(/\\/g, "/");
+
+    if (asPath.startsWith("http://") || asPath.startsWith("https://")) {
+      try {
+        const url = new URL(asPath);
+        const backendOrigin = new URL(BASE_URL).origin;
+
+        // Nếu backend trả URL nhưng ảnh thực ra ở frontend static, đổi sang frontend origin
+        if ((url.pathname.startsWith("/img") || url.pathname.startsWith("/uploads")) && url.origin === backendOrigin) {
+          normalizedImage = `${window.location.origin}${url.pathname}`;
+        } else {
+          normalizedImage = asPath;
+        }
+      } catch {
+        normalizedImage = asPath;
+      }
+    } else {
+      const maybePath = asPath.replace(/^\/+/, "");
+      normalizedImage = `${window.location.origin}/${maybePath}`;
+    }
   }
 
   console.log(`🖼️ Product "${data.productName}": imageUrl="${imageUrl}" → normalized="${normalizedImage}"`);

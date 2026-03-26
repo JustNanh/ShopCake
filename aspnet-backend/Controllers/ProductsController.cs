@@ -18,7 +18,7 @@ public class ProductsController : ControllerBase
     private string NormalizeImageUrl(string? imageUrl)
     {
         if (string.IsNullOrWhiteSpace(imageUrl))
-            return "/img/no-image.png"; // bạn có thể đổi theo placeholder
+            return "/img/no-image.png";
 
         var normalized = imageUrl.Trim().Replace("\\", "/");
 
@@ -28,8 +28,8 @@ public class ProductsController : ControllerBase
         if (!normalized.StartsWith("/"))
             normalized = "/" + normalized;
 
-        // nếu gọi API từ máy local hoặc production, trả về URL đầy đủ
-        return $"{Request.Scheme}://{Request.Host}{normalized}";
+        // Trả về đường dẫn tương đối để frontend tự map host
+        return normalized;
     }
 
     /// <summary>Lấy tất cả sản phẩm (kèm danh mục) - Public</summary>
