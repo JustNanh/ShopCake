@@ -141,14 +141,14 @@ public class PaymentController : ControllerBase
         {
             { "vnp_Version", "2.1.0" },
             { "vnp_Command", "pay" },
-            { "vnp_TmnCode", tmnCode },
+            { "vnp_TmnCode", tmnCode ?? "" },
             { "vnp_Amount", ((long)(order.TotalAmount * 100)).ToString() },
             { "vnp_CurrCode", "VND" },
             { "vnp_TxnRef", requestId },
-            { "vnp_OrderInfo", $"{order.OrderId}|{order.Customer?.FullName}" },
+            { "vnp_OrderInfo", $"{order.OrderId}|{order.Customer?.FullName ?? "Guest"}" },
             { "vnp_OrderType", "other" },
             { "vnp_Locale", "vn" },
-            { "vnp_ReturnUrl", returnUrl },
+            { "vnp_ReturnUrl", returnUrl ?? "" },
             { "vnp_IpAddr", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1" },
             { "vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss") }
         };
@@ -180,14 +180,14 @@ public class PaymentController : ControllerBase
 
         var parameters = new Dictionary<string, string>
         {
-            { "partnerCode", partnerCode },
-            { "accessKey", accessKey },
+            { "partnerCode", partnerCode ?? "" },
+            { "accessKey", accessKey ?? "" },
             { "requestId", requestId },
             { "amount", amount },
             { "orderId", order.OrderId.ToString() },
             { "orderInfo", orderInfo },
-            { "returnUrl", returnUrl },
-            { "notifyUrl", returnUrl },
+            { "returnUrl", returnUrl ?? "" },
+            { "notifyUrl", returnUrl ?? "" },
             { "requestType", "captureMoMoWallet" },
             { "signature", signature }
         };
@@ -213,7 +213,7 @@ public class PaymentController : ControllerBase
 
         var parameters = new Dictionary<string, string>
         {
-            { "app_id", appId },
+            { "app_id", appId ?? "" },
             { "app_trans_id", transId },
             { "app_time", ((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds().ToString() },
             { "app_user", order.Customer?.FullName ?? "Guest" },
@@ -225,7 +225,7 @@ public class PaymentController : ControllerBase
             { "mac", mac }
         };
 
-        return zaloUrl;
+        return zaloUrl ?? "";
     }
 
     private string GenerateQRCode(int orderId, decimal amount, string paymentMethod)
