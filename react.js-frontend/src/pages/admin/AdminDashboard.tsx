@@ -45,24 +45,26 @@ const AdminDashboard = () => {
     loadData();
   }, []);
 
-  // Tính toán stats
+  // Tính toán stats - chỉ tính từ đơn hàng đã giao (Delivered)
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   const monthlyOrders = orders.filter(o => {
     const orderDate = new Date(o.orderDate);
     return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
   });
-  const monthlyRevenue = monthlyOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const deliveredOrders = orders.filter(o => o.status === "Delivered");
+  const deliveredThisMonth = monthlyOrders.filter(o => o.status === "Delivered");
+  const monthlyRevenue = deliveredThisMonth.reduce((sum, o) => sum + o.totalAmount, 0);
 
   const stats = [
-    { label: "Doanh thu tháng", value: formatPrice(monthlyRevenue), icon: DollarSign, change: "" },
-    { label: "Đơn hàng", value: orders.length.toString(), icon: ShoppingCart, change: "" },
+    { label: "Doanh thu tháng", value: formatPrice(monthlyRevenue), icon: DollarSign, change: `(${deliveredThisMonth.length}/${monthlyOrders.length} đơn)` },
+    { label: "Đơn hàng", value: deliveredOrders.length.toString(), icon: ShoppingCart, change: `trên ${orders.length} tổng` },
     { label: "Sản phẩm", value: products.length.toString(), icon: Package, change: "" },
     { label: "Tăng trưởng", value: "0%", icon: TrendingUp, change: "" },
   ];
 
-  // Tính revenueData theo tháng
-  const revenueData = orders.reduce((acc, order) => {
+  // Tính revenueData theo tháng - chỉ tính từ đơn hàng đã giao
+  const revenueData = deliveredOrders.reduce((acc, order) => {
     const date = new Date(order.orderDate);
     const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
     const existing = acc.find(d => d.month === month);
@@ -74,7 +76,7 @@ const AdminDashboard = () => {
     return acc;
   }, [] as { month: string; revenue: number }[]).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 
-  // Recent orders
+  // Recent orders - hiển thị đơn hàng gần đây (tất cả trạng thái)
   const recentOrders = orders.slice(0, 5).map(order => ({
     id: order.orderId.toString(),
     customer: order.customer?.fullName || "Unknown",

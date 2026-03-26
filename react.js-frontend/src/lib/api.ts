@@ -133,3 +133,15 @@ export async function register(payload: { fullName: string; email: string; passw
     body: JSON.stringify(payload),
   });
 }
+
+// Payment endpoints
+export async function initPayment(orderId: number, paymentMethod: string): Promise<any> {
+  return await request<any>("/api/payments/init", {
+    method: "POST",
+    body: JSON.stringify({ orderId, paymentMethod }),
+  });
+}
+
+export async function getPaymentStatus(paymentId: number): Promise<any> {
+  return await request<any>(`/api/payments/${paymentId}/status`);
+}

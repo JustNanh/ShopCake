@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthContext } from "@/contexts/AuthContext";
 import LoginPromptDialog from "@/components/LoginPromptDialog";
+import PaymentModal from "@/components/PaymentModal";
 import { formatPrice } from "@/data/products";
 import { createOrder } from "@/lib/api";
 import { toast } from "sonner";
@@ -17,6 +18,8 @@ const CheckoutPage = () => {
   const [coupon, setCoupon] = useState("");
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [orderId, setOrderId] = useState<number | null>(null);
   const [form, setForm] = useState({
     name: "", phone: "", address: "", city: "", district: "",
     shipping: "standard", payment: "cod",
@@ -64,11 +67,15 @@ const CheckoutPage = () => {
 
       toast.success(`Đặt hàng thành công! Mã đơn hàng: ${response.orderId} 🎉`);
       
-      // Clear cart sau khi thành công
-      clearCart();
-      
-      // Navigate về trang chủ
-      navigate("/");
+      // Nếu thanh toán online (không phải COD), hiển thị PaymentModal
+      if (form.payment === "banking" || form.payment === "vnpay" || form.payment === "momo" || form.payment === "zalopay") {
+        setOrderId(response.orderId);
+        setShowPaymentModal(true);
+      } else {
+        // COD - clear cart và navigate về trang chủ
+        clearCart();
+        navigate("/");
+      }
     } catch (error: any) {
       console.error("Order error:", error);
       toast.error(error.message || "Lỗi khi đặt hàng, vui lòng thử lại");
@@ -166,6 +173,18 @@ const CheckoutPage = () => {
               <input type="radio" name="payment" value="banking" checked={form.payment === "banking"} onChange={() => handleChange("payment", "banking")} />
               <p className="text-sm font-medium">Chuyển khoản ngân hàng</p>
             </label>
+            <label className="flex items-center gap-3 cursor-pointer rounded-lg border p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+              <input type="radio" name="payment" value="vnpay" checked={form.payment === "vnpay"} onChange={() => handleChange("payment", "vnpay")} />
+              <p className="text-sm font-medium">🏦 VNPay - Thanh toán online</p>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer rounded-lg border p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+              <input type="radio" name="payment" value="momo" checked={form.payment === "momo"} onChange={() => handleChange("payment", "momo")} />
+              <p className="text-sm font-medium">📱 Momo - Ví điện tử</p>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer rounded-lg border p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+              <input type="radio" name="payment" value="zalopay" checked={form.payment === "zalopay"} onChange={() => handleChange("payment", "zalopay")} />
+              <p className="text-sm font-medium">🛒 Zalopay - Thanh toán</p>
+            </label>
           </div>
         </div>
 
@@ -211,6 +230,24 @@ const CheckoutPage = () => {
           </div>
         </div>
       </form>
+
+      {/* Payment Modal */}
+      {showPaymentModal && orderId && (
+        <PaymentModal
+          orderId={orderId}
+          totalAmount={total}
+          onClose={() => {
+            setShowPaymentModal(false);
+            clearCart();
+            navigate("/");
+          }}
+          onSuccess={() => {
+            setShowPaymentModal(false);
+            clearCart();
+            navigate("/");
+          }}
+        />
+      )}
     </div>
     </>
   );
