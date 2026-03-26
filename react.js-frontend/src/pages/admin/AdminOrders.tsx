@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatPrice } from "@/data/products";
-import { getOrders, updateOrderStatus } from "@/lib/api";
-import { Search } from "lucide-react";
+import { getOrders, updateOrderStatus, deleteOrder } from "@/lib/api";
+import { Search, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Order = {
@@ -99,6 +99,18 @@ const AdminOrders = () => {
     }
   };
 
+  const deleteOrderAdmin = async (id: string) => {
+    if (!confirm(`Bạn có chắc muốn xóa đơn #${id}?`)) return;
+    try {
+      await deleteOrder(Number(id));
+      setOrders((prev) => prev.filter((o) => o.id !== id));
+      toast({ title: `Đã xóa đơn #${id}`, variant: "destructive" });
+    } catch (error) {
+      console.error("Xóa đơn thất bại", error);
+      toast({ title: "Xóa thất bại", description: String(error), variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-display font-bold text-foreground">Quản lý đơn hàng</h1>
@@ -172,7 +184,9 @@ const AdminOrders = () => {
                     </Select>
                   </TableCell>
                   <TableCell className="text-right">
-                    {/* Có thể thêm nút khác nếu cần */}
+                    <Button variant="ghost" size="icon" onClick={() => deleteOrderAdmin(o.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))

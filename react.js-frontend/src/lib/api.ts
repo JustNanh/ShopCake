@@ -117,6 +117,12 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
   });
 }
 
+export async function deleteOrder(orderId: number): Promise<any> {
+  return await request<any>(`/api/orders/${orderId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function createOrder(order: { customerId: number; items: Array<{ productId: number; quantity: number; priceAtPurchase: number; }>; }): Promise<any> {
   return await request<any>("/api/orders", {
     method: "POST",
