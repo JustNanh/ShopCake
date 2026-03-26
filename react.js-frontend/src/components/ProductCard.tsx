@@ -4,6 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Product, formatPrice } from "@/data/products";
 import { useCartStore } from "@/store/cartStore";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+
+const ImageWithFallback = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+  }, [src]);
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      className={className}
+      onError={() => setCurrentSrc("https://via.placeholder.com/300x300?text=No+Image")}
+    />
+  );
+};
 
 const ProductCard = ({ product, index = 0 }: { product: Product; index?: number }) => {
   const addItem = useCartStore((s) => s.addItem);
@@ -17,7 +35,7 @@ const ProductCard = ({ product, index = 0 }: { product: Product; index?: number 
     >
       <Link to={`/product/${product.id}`}>
         <div className="aspect-square overflow-hidden">
-          <img
+          <ImageWithFallback
             src={product.image}
             alt={product.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
