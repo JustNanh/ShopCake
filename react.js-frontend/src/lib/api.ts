@@ -169,3 +169,15 @@ export async function initPayment(orderId: number, paymentMethod: string): Promi
 export async function getPaymentStatus(paymentId: number): Promise<any> {
   return await request<any>(`/api/payments/${paymentId}/status`);
 }
+
+// Reviews endpoints
+export async function getProductReviews(productId: number): Promise<any[]> {
+  return await request<any[]>(`/api/reviews/product/${productId}`);
+}
+
+export async function createReview(review: { productId: number; rating: number; comment?: string }): Promise<any> {
+  return await request<any>("/api/reviews", {
+    method: "POST",
+    body: JSON.stringify(review),
+  });
+}

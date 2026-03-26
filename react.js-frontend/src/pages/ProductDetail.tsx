@@ -4,9 +4,10 @@ import { Star, Minus, Plus, ShoppingCart, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Product, formatPrice } from "@/data/products";
-import { getProductById } from "@/lib/api";
+import { getProductById, getProductReviews, createReview } from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
 import { motion } from "framer-motion";
+import useAuth from "@/hooks/use-auth";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -17,6 +18,7 @@ const ProductDetail = () => {
   const [message, setMessage] = useState("");
   const addItem = useCartStore((s) => s.addItem);
   const setCartOpen = useCartStore((s) => s.setCartOpen);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -145,8 +147,8 @@ const ProductDetail = () => {
         <TabsContent value="storage" className="mt-4 text-muted-foreground leading-relaxed">
           {product.storage}
         </TabsContent>
-        <TabsContent value="reviews" className="mt-4 text-muted-foreground">
-          <p>Chưa có đánh giá nào cho sản phẩm này.</p>
+        <TabsContent value="reviews" className="mt-4">
+          {product && <ReviewsSection productId={product.id} />}
         </TabsContent>
       </Tabs>
     </div>
@@ -156,5 +158,169 @@ const ProductDetail = () => {
 const Label = ({ className, children }: { className?: string; children: React.ReactNode }) => (
   <label className={className}>{children}</label>
 );
+
+const ReviewsSection = ({ productId }: { productId: number }) => {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    loadReviews();
+  }, [productId]);
+
+  const loadReviews = async () => {
+    try {
+      setLoading(true);
+      const data = await getProductReviews(productId);
+      setReviews(data);
+    } catch (error) {
+      console.error("Failed to load reviews:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      setSubmitting(true);
+      await createReview({
+        productId,
+        rating,
+        comment: comment.trim() || undefined,
+      });
+
+      // Reset form
+      setRating(5);
+      setComment("");
+      setShowForm(false);
+
+      // Reload reviews
+      await loadReviews();
+
+      // Show success message (you can add toast here)
+      alert("Đánh giá của bạn đã được gửi thành công!");
+    } catch (error: any) {
+      alert("Có lỗi xảy ra khi gửi đánh giá: " + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Rating Summary */}
+      <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-primary">{averageRating.toFixed(1)}</div>
+          <div className="flex justify-center mt-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} className={`h-4 w-4 ${i < Math.floor(averageRating) ? "fill-warm-gold text-warm-gold" : "text-muted"}`} />
+            ))}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">{reviews.length} đánh giá</div>
+        </div>
+
+        {user && (
+          <Button
+            variant="outline"
+            onClick={() => setShowForm(!showForm)}
+            className="ml-auto"
+          >
+            {showForm ? "Hủy" : "Viết đánh giá"}
+          </Button>
+        )}
+      </div>
+
+      {/* Review Form */}
+      {showForm && user && (
+        <motion.form
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          onSubmit={handleSubmitReview}
+          className="p-4 border rounded-lg space-y-4"
+        >
+          <h3 className="font-semibold">Viết đánh giá của bạn</h3>
+
+          {/* Rating */}
+          <div>
+            <Label className="text-sm font-medium">Đánh giá:</Label>
+            <div className="flex gap-1 mt-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setRating(i + 1)}
+                  className="focus:outline-none"
+                >
+                  <Star className={`h-6 w-6 ${i < rating ? "fill-warm-gold text-warm-gold" : "text-muted hover:text-warm-gold"}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div>
+            <Label className="text-sm font-medium">Bình luận (tùy chọn):</Label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+              className="mt-2 w-full rounded-lg border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 resize-none h-24"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Đang gửi..." : "Gửi đánh giá"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              Hủy
+            </Button>
+          </div>
+        </motion.form>
+      )}
+
+      {/* Reviews List */}
+      <div className="space-y-4">
+        {loading ? (
+          <p className="text-muted-foreground">Đang tải đánh giá...</p>
+        ) : reviews.length === 0 ? (
+          <p className="text-muted-foreground">Chưa có đánh giá nào cho sản phẩm này.</p>
+        ) : (
+          reviews.map((review) => (
+            <div key={review.reviewId} className="p-4 border rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className={`h-4 w-4 ${i < review.rating ? "fill-warm-gold text-warm-gold" : "text-muted"}`} />
+                  ))}
+                </div>
+                <span className="text-sm font-medium">{review.customer?.fullName || "Ẩn danh"}</span>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {new Date(review.reviewDate).toLocaleDateString("vi-VN")}
+                </span>
+              </div>
+              {review.comment && (
+                <p className="text-sm text-muted-foreground">{review.comment}</p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default ProductDetail;

@@ -9,7 +9,7 @@ import { formatPrice } from "@/data/products";
 import { createOrder } from "@/lib/api";
 import { toast } from "sonner";
 
-const shippingFee = 30000;
+const shippingFee = 2000;
 
 const CheckoutPage = () => {
   const { items, totalPrice, clearCart } = useCartStore();
@@ -159,7 +159,7 @@ const CheckoutPage = () => {
             </label>
             <label className="flex items-center gap-3 cursor-pointer rounded-lg border p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
               <input type="radio" name="shipping" value="express" checked={form.shipping === "express"} onChange={() => handleChange("shipping", "express")} />
-              <div><p className="text-sm font-medium">Giao nhanh</p><p className="text-xs text-muted-foreground">1-2 giờ • {formatPrice(50000)}</p></div>
+              <div><p className="text-sm font-medium">Giao nhanh</p><p className="text-xs text-muted-foreground">1-2 giờ • {formatPrice(1000)}</p></div>
             </label>
           </div>
 
