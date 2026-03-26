@@ -17,12 +17,23 @@ function mapProduct(data: any): Product {
   // Chuẩn hóa flavor (chuyển về chữ thường)
   const flavorStr = data.flavor?.toLowerCase().trim() ?? "cream";
 
-  const imageUrl = data.imageUrl ?? data.image ?? "";
-  const normalizedImage = imageUrl
-    ? imageUrl.startsWith("http")
-      ? imageUrl
-      : `${BASE_URL}/${imageUrl.replace(/^\/+/, "")}`
-    : "https://via.placeholder.com/300x300?text=No+Image";
+  // Xử lý imageUrl - nếu rỗng hoặc không có thì dùng placeholder
+  let imageUrl = data.imageUrl || data.image || "";
+  
+  let normalizedImage: string;
+  
+  if (!imageUrl || imageUrl.trim() === "") {
+    // Nếu imageUrl trống, dùng placeholder
+    normalizedImage = "https://via.placeholder.com/300x300?text=No+Image";
+  } else if (imageUrl.startsWith("http")) {
+    // Nếu là URL đầy đủ (http/https), dùng trực tiếp
+    normalizedImage = imageUrl;
+  } else {
+    // Nếu là đường dẫn tương đối, thêm BASE_URL
+    normalizedImage = `${BASE_URL}/${imageUrl.replace(/^\/+/, "")}`;
+  }
+
+  console.log(`🖼️ Product "${data.productName}": imageUrl="${imageUrl}" → normalized="${normalizedImage}"`);
 
   return {
     id: data.productId ?? data.id,

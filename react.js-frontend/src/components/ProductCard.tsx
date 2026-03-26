@@ -8,17 +8,32 @@ import { useState, useEffect } from "react";
 
 const ImageWithFallback = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
   const [currentSrc, setCurrentSrc] = useState(src);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setCurrentSrc(src);
+    setIsLoading(true);
   }, [src]);
+
+  const handleError = () => {
+    console.error(`❌ Failed to load image: ${src}`);
+    setCurrentSrc("https://via.placeholder.com/300x300?text=No+Image");
+    setIsLoading(false);
+  };
+
+  const handleLoad = () => {
+    console.log(`✅ Image loaded: ${src}`);
+    setIsLoading(false);
+  };
 
   return (
     <img
       src={currentSrc}
       alt={alt}
       className={className}
-      onError={() => setCurrentSrc("https://via.placeholder.com/300x300?text=No+Image")}
+      onError={handleError}
+      onLoad={handleLoad}
+      style={{ opacity: isLoading ? 0.5 : 1, transition: "opacity 0.3s" }}
     />
   );
 };
@@ -34,7 +49,7 @@ const ProductCard = ({ product, index = 0 }: { product: Product; index?: number 
       className="group overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md"
     >
       <Link to={`/product/${product.id}`}>
-        <div className="aspect-square overflow-hidden">
+        <div className="aspect-square overflow-hidden bg-muted">
           <ImageWithFallback
             src={product.image}
             alt={product.name}
