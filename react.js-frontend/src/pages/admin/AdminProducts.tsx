@@ -171,7 +171,14 @@ const AdminProducts = () => {
               {filtered.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    <img src={p.image} alt={p.name} className="h-12 w-12 rounded-lg object-cover" />
+                    <img
+                      src={p.image || "https://via.placeholder.com/120x120?text=No+Image"}
+                      alt={p.name}
+                      className="h-12 w-12 rounded-lg object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "https://via.placeholder.com/120x120?text=No+Image";
+                      }}
+                    />
                   </TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell>{categoryLabel[p.category]}</TableCell>

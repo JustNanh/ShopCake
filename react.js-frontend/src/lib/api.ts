@@ -17,11 +17,18 @@ function mapProduct(data: any): Product {
   // Chuẩn hóa flavor (chuyển về chữ thường)
   const flavorStr = data.flavor?.toLowerCase().trim() ?? "cream";
 
+  const imageUrl = data.imageUrl ?? data.image ?? "";
+  const normalizedImage = imageUrl
+    ? imageUrl.startsWith("http")
+      ? imageUrl
+      : imageUrl.replace(/^\\\\+/, "").replace(/^\/+/, "") // remove leading slash/backslash
+    : "https://via.placeholder.com/300x300?text=No+Image";
+
   return {
     id: data.productId ?? data.id,
     name: data.productName ?? data.name ?? "Sản phẩm chưa có tên",
     price: Number(data.price ?? 0),
-    image: data.imageUrl ?? data.image ?? "", // Nếu database không có ảnh, nó sẽ để chuỗi rỗng
+    image: normalizedImage,
     category: mappedCategory as Product["category"],
     flavor: flavorStr as Product["flavor"],
     rating: Number(data.rating ?? 4.5), // Giả lập rating nếu DB không có
@@ -69,6 +76,10 @@ export async function getProducts(): Promise<Product[]> {
 export async function getProductById(id: number): Promise<Product> {
   const data = await request<any>(`/api/products/${id}`);
   return mapProduct(data);
+}
+
+export async function getOrders(): Promise<any[]> {
+  return await request<any[]>('/api/orders');
 }
 
 export async function createOrder(order: { customerId: number; items: Array<{ productId: number; quantity: number; priceAtPurchase: number; }>; }): Promise<any> {

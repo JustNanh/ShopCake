@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatPrice } from "@/data/products";
+import { getOrders } from "@/lib/api";
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,11 +29,46 @@ const statusColor: Record<string, string> = {
 
 const statuses = ["Đang xử lý", "Đang giao", "Đã giao", "Đã hủy"];
 
+const mapStatusToUI = (status: string) => {
+  switch (status) {
+    case "Processing": return "Đang xử lý";
+    case "Delivered": return "Đã giao";
+    case "Cancelled": return "Đã hủy";
+    case "Pending":
+    default:
+      return "Đang xử lý";
+  }
+};
+
 const AdminOrders = () => {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const data = await getOrders();
+        const normalized = data.map((o: any) => ({
+          id: String(o.orderId ?? o.id),
+          customer: o.customer?.fullName ?? o.customer?.fullName ?? "Khách hàng",
+          email: o.customer?.email ?? "",
+          items: o.orderDetails?.map((d: any) => `${d.product?.productName ?? d.productId} x${d.quantity}`).join(", ") ?? "",
+          total: Number(o.totalAmount ?? o.total ?? 0),
+          status: mapStatusToUI(o.status ?? "Pending"),
+          rawStatus: o.status ?? "Pending",
+          date: new Date(o.orderDate ?? o.orderDate).toLocaleString("vi-VN"),
+        }));
+        setOrders(normalized);
+      } catch (error) {
+        console.error("Lấy đơn hàng thất bại", error);
+        toast({ title: "Lấy đơn hàng thất bại", description: String(error), variant: "destructive" });
+      }
+    };
+
+    loadOrders();
+  }, [toast]);
 
   const filtered = orders.filter((o) => {
     const matchSearch = o.customer.toLowerCase().includes(search.toLowerCase()) || o.id.toLowerCase().includes(search.toLowerCase());

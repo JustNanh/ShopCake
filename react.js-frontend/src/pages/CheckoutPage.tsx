@@ -24,7 +24,8 @@ const CheckoutPage = () => {
 
   const handleChange = (field: string, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
-async (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Kiểm tra xem user đã đăng nhập chưa
@@ -74,7 +75,6 @@ async (e: React.FormEvent) => {
     } finally {
       setIsLoading(false);
     }
-    navigate("/");
   };
 
   if (items.length === 0) {
@@ -178,9 +178,9 @@ async (e: React.FormEvent) => {
                 <div key={item.product.id} className="flex gap-3">
                   <img src={item.product.image} alt={item.product.name} className="h-14 w-14 rounded-md object-cover" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate disabled={isLoading}>
-              {isLoading ? "Đang xử lý..." : "Đặt hàng"}
-            roduct.name}</p>
+                    <p className="text-sm font-medium truncate">
+                      {isLoading ? "Đang xử lý..." : item.product.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">x{item.quantity}</p>
                   </div>
                   <p className="text-sm font-medium">{formatPrice(item.product.price * item.quantity)}</p>
