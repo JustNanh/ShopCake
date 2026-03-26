@@ -6,6 +6,7 @@ using QLBN.Api.DTOs;
 using QLBN.Api.Models;
 using System.Security.Cryptography;
 using System.Text;
+using QRCoder;
 
 namespace QLBN.Api.Controllers;
 
@@ -225,6 +226,27 @@ public class PaymentController : ControllerBase
         };
 
         return zaloUrl;
+    }
+
+    private string GenerateQRCode(int orderId, decimal amount, string paymentMethod)
+    {
+        // Tạo dữ liệu QR code theo chuẩn thanh toán Việt Nam
+        var qrData = new StringBuilder();
+        qrData.AppendLine("THANH TOÁN ĐƠN HÀNG");
+        qrData.AppendLine($"Mã đơn hàng: #{orderId}");
+        qrData.AppendLine($"Số tiền: {amount:N0} VND");
+        qrData.AppendLine($"Phương thức: {paymentMethod}");
+        qrData.AppendLine($"Thời gian: {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
+        qrData.AppendLine("Vui lòng thanh toán đúng số tiền và ghi rõ mã đơn hàng trong nội dung chuyển khoản.");
+        
+        // Tạo QR code
+        using var qrGenerator = new QRCodeGenerator();
+        var qrCodeData = qrGenerator.CreateQrCode(qrData.ToString(), QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        var qrCodeImage = qrCode.GetGraphic(20);
+        
+        // Chuyển thành base64 string
+        return Convert.ToBase64String(qrCodeImage);
     }
 
     private string CreateSHA256(string data)
