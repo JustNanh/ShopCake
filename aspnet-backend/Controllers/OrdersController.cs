@@ -110,8 +110,21 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        var order = await _db.Orders.FindAsync(id);
+        var order = await _db.Orders
+            .Include(o => o.OrderDetails)
+            .FirstOrDefaultAsync(o => o.OrderId == id);
+
         if (order == null) return NotFound(new { message = "Không tìm thấy hóa đơn." });
+
+        // Xóa chi tiết đơn hàng rõ ràng (trong DB có cấu hình cascade nhưng để chắc chắn)
+        if (order.OrderDetails.Any())
+            _db.Order_Details.RemoveRange(order.OrderDetails);
+
+        // Xóa payment liên quan nếu có
+        var payments = await _db.Payments.Where(p => p.OrderId == id).ToListAsync();
+        if (payments.Any())
+            _db.Payments.RemoveRange(payments);
+
         _db.Orders.Remove(order);
         await _db.SaveChangesAsync();
         return Ok(new { message = "Xóa hóa đơn thành công!" });

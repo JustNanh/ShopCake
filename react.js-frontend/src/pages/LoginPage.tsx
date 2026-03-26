@@ -15,6 +15,8 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -62,6 +64,8 @@ const LoginPage = () => {
           fullName: name,
           email: email,
           password: password,
+          phone: phone,
+          gender: gender || null,
         });
 
         toast({
@@ -125,16 +129,45 @@ const LoginPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Họ và tên</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Nguyễn Văn A"
-                  required={!isLogin}
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Họ và tên</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    required={!isLogin}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Số điện thoại</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0971234567"
+                    required={!isLogin}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Giới tính</Label>
+                  <select
+                    id="gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Chọn giới tính</option>
+                    <option value="Male">Nam</option>
+                    <option value="Female">Nữ</option>
+                    <option value="Other">Khác</option>
+                  </select>
+                </div>
+              </>
             )}
 
             <div className="space-y-2">

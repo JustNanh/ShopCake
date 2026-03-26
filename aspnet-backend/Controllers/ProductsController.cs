@@ -15,17 +15,41 @@ public class ProductsController : ControllerBase
     private readonly AppDbContext _db;
     public ProductsController(AppDbContext db) => _db = db;
 
+    private string NormalizeImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+            return "/img/no-image.png"; // bạn có thể đổi theo placeholder
+
+        var normalized = imageUrl.Trim().Replace("\\", "/");
+
+        if (normalized.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            return normalized;
+
+        if (!normalized.StartsWith("/"))
+            normalized = "/" + normalized;
+
+        // nếu gọi API từ máy local hoặc production, trả về URL đầy đủ
+        return $"{Request.Scheme}://{Request.Host}{normalized}";
+    }
+
     /// <summary>Lấy tất cả sản phẩm (kèm danh mục) - Public</summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll() =>
-        Ok(await _db.Products.Include(p => p.Category).ToListAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var products = await _db.Products.Include(p => p.Category).ToListAsync();
+        products.ForEach(p => p.ImageUrl = NormalizeImageUrl(p.ImageUrl));
+        return Ok(products);
+    }
 
     /// <summary>Lấy chi tiết 1 sản phẩm - Public</summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var p = await _db.Products.Include(x => x.Category).FirstOrDefaultAsync(x => x.ProductId == id);
-        return p == null ? NotFound(new { message = "Không tìm thấy sản phẩm." }) : Ok(p);
+        if (p == null) return NotFound(new { message = "Không tìm thấy sản phẩm." });
+
+        p.ImageUrl = NormalizeImageUrl(p.ImageUrl);
+        return Ok(p);
     }
 
     /// <summary>Thêm sản phẩm mới (Chỉ Admin)</summary>
