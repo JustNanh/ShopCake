@@ -21,7 +21,7 @@ function mapProduct(data: any): Product {
   const normalizedImage = imageUrl
     ? imageUrl.startsWith("http")
       ? imageUrl
-      : imageUrl.replace(/^\\\\+/, "").replace(/^\/+/, "") // remove leading slash/backslash
+      : `${BASE_URL}/${imageUrl.replace(/^\/+/, "")}`
     : "https://via.placeholder.com/300x300?text=No+Image";
 
   return {

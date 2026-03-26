@@ -9,6 +9,23 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const ImageWithFallback = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+  }, [src]);
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      className={className}
+      onError={() => setCurrentSrc("https://via.placeholder.com/120x120?text=No+Image")}
+    />
+  );
+};
+
 const AdminProducts = () => {
   const [productList, setProductList] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
@@ -171,13 +188,10 @@ const AdminProducts = () => {
               {filtered.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    <img
+                    <ImageWithFallback
                       src={p.image || "https://via.placeholder.com/120x120?text=No+Image"}
                       alt={p.name}
                       className="h-12 w-12 rounded-lg object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = "https://via.placeholder.com/120x120?text=No+Image";
-                      }}
                     />
                   </TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
