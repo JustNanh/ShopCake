@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthContext } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
@@ -77,6 +78,8 @@ const Header = () => {
               </span>
             )}
           </Button>
+
+          <ThemeToggle />
 
           <UserMenu />
 

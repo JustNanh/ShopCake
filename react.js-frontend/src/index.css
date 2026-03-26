@@ -83,6 +83,11 @@
     --sidebar-accent-foreground: 30 15% 90%;
     --sidebar-border: 25 15% 15%;
     --sidebar-ring: 25 65% 50%;
+
+    --warm-cream: 25 20% 12%;
+    --warm-gold: 38 70% 65%;
+    --warm-brown: 30 20% 70%;
+    --soft-pink: 350 30% 25%;
   }
 }
 
