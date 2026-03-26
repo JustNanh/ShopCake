@@ -64,7 +64,9 @@ const UserOrders = () => {
                       <div className="font-semibold">{new Date(order.orderDate).toLocaleString("vi-VN")}</div>
                       <div className="text-sm">Tổng: {formatPrice(Number(order.totalAmount))}</div>
                     </div>
-                    <div className="text-xs px-3 py-1 rounded-full font-medium ${statusColor[order.status] || "bg-gray-100 text-gray-700"}">{order.status}</div>
+                    <div className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor[order.status] || "bg-gray-100 text-gray-700"}`}>
+                      {order.status}
+                    </div>
                   </div>
                   <div className="mt-3 text-sm text-muted-foreground">
                     {order.orderDetails?.map((item: any) => (
