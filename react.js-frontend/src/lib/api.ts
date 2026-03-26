@@ -106,6 +106,10 @@ export async function getOrders(): Promise<any[]> {
   return await request<any[]>('/api/orders');
 }
 
+export async function getMyOrders(): Promise<any[]> {
+  return await request<any[]>('/api/orders/me');
+}
+
 export async function updateOrderStatus(orderId: number, status: string): Promise<any> {
   return await request<any>(`/api/orders/${orderId}/status`, {
     method: "PATCH",

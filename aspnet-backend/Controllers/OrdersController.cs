@@ -18,9 +18,30 @@ public class OrdersController : ControllerBase
 
     /// <summary>Lấy tất cả hóa đơn (Chỉ Admin)</summary>
     [HttpGet]
-    [Authorize(Roles = "Admin")] 
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll() =>
         Ok(await _db.Orders.Include(o => o.Customer).OrderByDescending(o => o.OrderDate).ToListAsync());
+
+    /// <summary>Lấy hóa đơn của user hiện tại</summary>
+    [HttpGet("me")]
+    [Authorize] // Bất kỳ user hiện tại
+    public async Task<IActionResult> GetMyOrders()
+    {
+        var customerIdClaim = User.Claims.FirstOrDefault(c => c.Type == "customer_id");
+        if (customerIdClaim == null)
+            return Unauthorized(new { message = "Không có thông tin người dùng." });
+
+        if (!int.TryParse(customerIdClaim.Value, out var customerId))
+            return Unauthorized(new { message = "customer_id không hợp lệ." });
+
+        var orders = await _db.Orders
+            .Where(o => o.CustomerId == customerId)
+            .Include(o => o.OrderDetails).ThenInclude(d => d.Product)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+
+        return Ok(orders);
+    }
 
     /// <summary>Lấy chi tiết hóa đơn kèm danh sách sản phẩm (Bất kỳ user nào đăng nhập)</summary>
     [HttpGet("{id}")]
