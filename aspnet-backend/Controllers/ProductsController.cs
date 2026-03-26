@@ -74,4 +74,42 @@ public class ProductsController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(new { message = "Xóa sản phẩm thành công!" });
     }
+
+    /// <summary>Upload hình ảnh sản phẩm (Chỉ Admin)</summary>
+    [HttpPost("upload"), Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UploadImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "Vui lòng chọn file hình ảnh." });
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var fileExtension = Path.GetExtension(file.FileName).ToLower();
+        
+        if (!allowedExtensions.Contains(fileExtension))
+            return BadRequest(new { message = "Chỉ hỗ trợ định dạng: jpg, jpeg, png, gif, webp" });
+
+        try
+        {
+            var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var uploadsPath = Path.Combine(wwwrootPath, "uploads");
+            
+            if (!Directory.Exists(uploadsPath))
+                Directory.CreateDirectory(uploadsPath);
+            
+            var fileName = $"{Guid.NewGuid()}{fileExtension}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+            
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            
+            var imageUrl = $"/uploads/{fileName}";
+            return Ok(new { message = "Upload thành công!", imageUrl = imageUrl });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi upload hình ảnh: {ex.Message}" });
+        }
+    }
 }

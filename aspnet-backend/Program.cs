@@ -77,6 +77,9 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "QLBN API v1"));
 
+// ── Phục vụ hình ảnh tĩnh từ wwwroot folder ──
+app.UseStaticFiles();
+
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
