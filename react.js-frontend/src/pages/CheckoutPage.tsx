@@ -135,8 +135,6 @@ const CheckoutPage = () => {
               >
                 <option value="">Tỉnh/Thành phố</option>
                 <option>TP. Hồ Chí Minh</option>
-                <option>Hà Nội</option>
-                <option>Đà Nẵng</option>
               </select>
               <select
                 value={form.district}
@@ -144,9 +142,10 @@ const CheckoutPage = () => {
                 className="h-10 rounded-lg border bg-background px-3 text-sm outline-none"
               >
                 <option value="">Quận/Huyện</option>
-                <option>Quận 1</option>
-                <option>Quận 3</option>
-                <option>Quận 7</option>
+                <option>Hóc Môn</option>
+                <option>Bình Dương</option>
+                <option>Củ Chi</option>
+                                <option>Quận 12</option>
               </select>
             </div>
           </div>
