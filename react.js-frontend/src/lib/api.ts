@@ -119,6 +119,10 @@ export async function getOrders(): Promise<any[]> {
   return await request<any[]>('/api/orders');
 }
 
+export async function getPurchasedProducts(): Promise<any[]> {
+  return await request<any[]>('/api/orders/stats/purchased-products');
+}
+
 export async function getMyOrders(): Promise<any[]> {
   return await request<any[]>('/api/orders/me');
 }

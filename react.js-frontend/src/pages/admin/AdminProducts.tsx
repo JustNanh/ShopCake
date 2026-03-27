@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProducts, updateProduct, deleteProduct } from "@/lib/api";
+import { getProducts, updateProduct, deleteProduct, getPurchasedProducts } from "@/lib/api";
 import { Product, formatPrice } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,9 @@ const ImageWithFallback = ({ src, alt, className }: { src: string; alt: string; 
 
 const AdminProducts = () => {
   const [productList, setProductList] = useState<Product[]>([]);
+  const [purchasedProducts, setPurchasedProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"all" | "purchased">("all");
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: "", price: "", category: "birthday" as Product["category"], description: "" });
@@ -40,8 +42,12 @@ const AdminProducts = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const data = await getProducts();
-        setProductList(data);
+        const [products, purchased] = await Promise.all([
+          getProducts(),
+          getPurchasedProducts(),
+        ]);
+        setProductList(products);
+        setPurchasedProducts(purchased);
         setError(null);
       } catch (ex: any) {
         setError(ex.message || "Không thể tải sản phẩm");
@@ -132,7 +138,31 @@ const AdminProducts = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-display font-bold text-foreground">Quản lý sản phẩm</h1>
+        <div className="space-y-3">
+          <h1 className="text-2xl font-display font-bold text-foreground">Quản lý sản phẩm</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode("all")}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                viewMode === "all"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              Tất cả sản phẩm ({productList.length})
+            </button>
+            <button
+              onClick={() => setViewMode("purchased")}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                viewMode === "purchased"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              Sản phẩm đã bán ({purchasedProducts.length})
+            </button>
+          </div>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openAdd}>
@@ -191,7 +221,7 @@ const AdminProducts = () => {
           <div className="p-8 text-center text-primary">Đang tải danh sách sản phẩm...</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive">{error}</div>
-        ) : (
+        ) : viewMode === "all" ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -204,31 +234,78 @@ const AdminProducts = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>
-                    <ImageWithFallback
-                      src={p.image || "https://via.placeholder.com/120x120?text=No+Image"}
-                      alt={p.name}
-                      className="h-12 w-12 rounded-lg object-cover"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell>{categoryLabel[p.category]}</TableCell>
-                  <TableCell>{formatPrice(p.price)}</TableCell>
-                  <TableCell>⭐ {p.rating}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Không tìm thấy sản phẩm
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filtered.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>
+                      <ImageWithFallback
+                        src={p.image || "https://via.placeholder.com/120x120?text=No+Image"}
+                        alt={p.name}
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell>{categoryLabel[p.category]}</TableCell>
+                    <TableCell>{formatPrice(p.price)}</TableCell>
+                    <TableCell>⭐ {p.rating}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tên sản phẩm</TableHead>
+                <TableHead>Danh mục</TableHead>
+                <TableHead>Giá</TableHead>
+                <TableHead className="text-right">Số lượng bán</TableHead>
+                <TableHead className="text-right">Doanh thu</TableHead>
+                <TableHead>Lần mua cuối</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {purchasedProducts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Chưa có sản phẩm nào được mua
+                  </TableCell>
+                </TableRow>
+              ) : (
+                purchasedProducts.map((p) => (
+                  <TableRow key={p.productId}>
+                    <TableCell className="font-medium">{p.productName}</TableCell>
+                    <TableCell>{p.category}</TableCell>
+                    <TableCell>{formatPrice(p.price)}</TableCell>
+                    <TableCell className="text-right">
+                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                        {p.totalQuantitySold}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-green-600">
+                      {formatPrice(p.totalRevenue)}
+                    </TableCell>
+                    <TableCell>{new Date(p.lastPurchaseDate).toLocaleDateString("vi-VN")}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         )}

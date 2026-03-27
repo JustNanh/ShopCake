@@ -22,6 +22,32 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetAll() =>
         Ok(await _db.Orders.Include(o => o.Customer).OrderByDescending(o => o.OrderDate).ToListAsync());
 
+    /// <summary>Lấy danh sách sản phẩm đã được mua (Chỉ Admin)</summary>
+    [HttpGet("stats/purchased-products")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetPurchasedProducts()
+    {
+        var purchasedProducts = await _db.Order_Details
+            .Include(od => od.Product)
+            .Include(od => od.Order)
+            .GroupBy(od => od.ProductId)
+            .Select(g => new
+            {
+                productId = g.Key,
+                productName = g.First().Product!.ProductName,
+                totalQuantitySold = g.Sum(od => od.Quantity),
+                totalRevenue = g.Sum(od => od.Quantity * od.PriceAtPurchase),
+                lastPurchaseDate = g.Max(od => od.Order!.OrderDate),
+                purchaseCount = g.Select(od => od.OrderId).Distinct().Count(), // Số lần được mua
+                price = g.First().Product!.Price,
+                category = g.First().Product!.Category!.CategoryName,
+            })
+            .OrderByDescending(p => p.totalQuantitySold)
+            .ToListAsync();
+
+        return Ok(purchasedProducts);
+    }
+
     /// <summary>Lấy hóa đơn của user hiện tại</summary>
     [HttpGet("me")]
     [Authorize] // Bất kỳ user hiện tại
@@ -124,8 +150,26 @@ public class OrdersController : ControllerBase
             _db.Payments.RemoveRange(payments);
 
         _db.Orders.Remove(order);
-        await _db.SaveChangesAsync();
-        return Ok(new { message = "Xóa hóa đơn thành công!" });
+        
+        try
+        {
+            await _db.SaveChangesAsync();
+            
+            // Maintain identity seed
+            var maxOrderId = await _db.Orders.MaxAsync(o => (int?)o.OrderId) ?? 0;
+            if (maxOrderId > 0)
+            {
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"DBCC CHECKIDENT('Orders', RESEED, {maxOrderId})"
+                );
+            }
+            
+            return Ok(new { message = "Xóa hóa đơn thành công!" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Lỗi khi xóa hóa đơn: " + ex.Message });
+        }
     }
 
     // =========================================================
@@ -162,8 +206,28 @@ public class OrdersController : ControllerBase
             _db.Payments.RemoveRange(payments);
 
         _db.Orders.Remove(order);
-        await _db.SaveChangesAsync();
-        return Ok(new { message = "Đã hủy và xóa đơn hàng thành công!" });
+        
+        try
+        {
+            await _db.SaveChangesAsync();
+            
+            // Kiểm tra xem đó có phải order cuối cùng không
+            var maxOrderId = await _db.Orders.MaxAsync(o => (int?)o.OrderId) ?? 0;
+            
+            // Cập nhật identity seed để ID tiếp theo = maxOrderId + 1
+            if (maxOrderId > 0)
+            {
+                await _db.Database.ExecuteSqlInterpolatedAsync(
+                    $"DBCC CHECKIDENT('Orders', RESEED, {maxOrderId})"
+                );
+            }
+            
+            return Ok(new { message = "Đã hủy và xóa đơn hàng thành công!" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Lỗi khi xóa đơn hàng: " + ex.Message });
+        }
     }
 
     /// <summary>Xóa toàn bộ lịch sử đơn hàng (Chỉ Admin) - KHÔNG làm reset ID</summary>
@@ -171,9 +235,54 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ClearAllOrders()
     {
-        // ExecuteDeleteAsync sẽ xóa sạch bảng Orders mà không ảnh hưởng tới ID đếm tự động
-        await _db.Orders.ExecuteDeleteAsync();
-        
-        return Ok(new { message = "Đã xóa toàn bộ lịch sử đơn hàng. ID tiếp theo sẽ tiếp tục tự động tăng." });
+        try
+        {
+            // Lưu ID cao nhất trước khi xóa
+            var maxOrderId = await _db.Orders.MaxAsync(o => (int?)o.OrderId) ?? 0;
+            
+            // Xóa tất cả payment trước (vì có foreign key từ Orders)
+            await _db.Payments.ExecuteDeleteAsync();
+            
+            // Xóa tất cả order details
+            await _db.Order_Details.ExecuteDeleteAsync();
+            
+            // Xóa tất cả orders
+            await _db.Orders.ExecuteDeleteAsync();
+            
+            // Reset identity seed để tiếp tục từ giá trị cao nhất + 1
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"DBCC CHECKIDENT('Orders', RESEED, {maxOrderId})"
+            );
+            
+            return Ok(new { 
+                message = "Đã xóa toàn bộ lịch sử đơn hàng. ID tiếp theo sẽ tiếp tục tự động tăng từ: " + (maxOrderId + 1)
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Lỗi khi xóa dữ liệu: " + ex.Message });
+        }
+    }
+
+    /// <summary>Reset ID đơn hàng (Chỉ Admin) - Cho ID bắt đầu lại từ 1</summary>
+    [HttpPost("reset-id")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ResetOrderId()
+    {
+        try
+        {
+            // Reset identity seed về 1
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"DBCC CHECKIDENT('Orders', RESEED, 0)"
+            );
+            
+            return Ok(new { 
+                message = "ID đơn hàng đã được reset. Đơn hàng mới sẽ bắt đầu từ ID: 1"
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Lỗi khi reset ID: " + ex.Message });
+        }
     }
 }
