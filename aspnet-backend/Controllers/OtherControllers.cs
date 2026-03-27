@@ -153,15 +153,41 @@ public class ReviewsController : ControllerBase
             .Where(r => r.ProductId == productId)
             .OrderByDescending(r => r.ReviewDate).ToListAsync());
 
-    /// <summary>Thêm đánh giá (Cần đăng nhập)</summary>
+    /// <summary>Thêm đánh giá (Cần đăng nhập + Đơn hàng phải đã giao)</summary>
     [HttpPost, Authorize]
     public async Task<IActionResult> Create([FromBody] ReviewCreateDto dto)
     {
         var customerId = int.Parse(User.FindFirst("customer_id")!.Value);
-        var review = new Review { CustomerId = customerId, ProductId = dto.ProductId, Rating = dto.Rating, Comment = dto.Comment };
+        
+        // Kiểm tra xem user có mua sản phẩm này không + đơn hàng đã giao
+        var orderDetail = await _db.Order_Details
+            .Include(od => od.Order)
+            .FirstOrDefaultAsync(od => 
+                od.ProductId == dto.ProductId && 
+                od.Order!.CustomerId == customerId &&
+                od.Order.Status == "Delivered"
+            );
+
+        if (orderDetail == null)
+            return BadRequest(new { message = "Bạn chỉ có thể đánh giá sản phẩm sau khi đơn hàng được giao." });
+
+        // Kiểm tra không review lại sản phẩm này nhiều lần
+        var existingReview = await _db.Reviews
+            .FirstOrDefaultAsync(r => r.CustomerId == customerId && r.ProductId == dto.ProductId);
+
+        if (existingReview != null)
+            return BadRequest(new { message = "Bạn đã đánh giá sản phẩm này rồi." });
+
+        var review = new Review 
+        { 
+            CustomerId = customerId, 
+            ProductId = dto.ProductId, 
+            Rating = dto.Rating, 
+            Comment = dto.Comment 
+        };
         _db.Reviews.Add(review);
         await _db.SaveChangesAsync();
-        return CreatedAtAction(null, new { message = "Đánh giá thành công!" });
+        return CreatedAtAction(null, new { message = "Đánh giá thành công!", reviewId = review.ReviewId });
     }
 
     /// <summary>Xóa đánh giá (Chỉ Admin)</summary>

@@ -90,6 +90,20 @@ const UserOrders = () => {
                       </div>
                     )}
 
+                    {/* Hiển thị nút Đánh giá khi đơn hàng đã giao */}
+                    {order.status === "Delivered" && (
+                      <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-green-50 p-3 rounded-md border border-green-200">
+                        <span className="text-sm text-green-700 font-medium">✅ Đơn hàng đã giao - Vui lòng đánh giá sản phẩm</span>
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => navigate(`/order/${order.orderId}/review`)}
+                        >
+                          Đánh giá sản phẩm
+                        </Button>
+                      </div>
+                    )}
+
                     <div className="mt-3 text-sm text-muted-foreground">
                       {order.orderDetails?.map((item: any) => (
                         <div key={item.detailId} className="flex justify-between gap-2">
