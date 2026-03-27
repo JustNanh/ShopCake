@@ -116,7 +116,43 @@ public class OrdersController : ControllerBase
 
         if (order == null) return NotFound(new { message = "Không tìm thấy hóa đơn." });
 
-        // Xóa chi tiết đơn hàng rõ ràng (trong DB có cấu hình cascade nhưng để chắc chắn)
+        if (order.OrderDetails.Any())
+            _db.Order_Details.RemoveRange(order.OrderDetails);
+
+        var payments = await _db.Payments.Where(p => p.OrderId == id).ToListAsync();
+        if (payments.Any())
+            _db.Payments.RemoveRange(payments);
+
+        _db.Orders.Remove(order);
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Xóa hóa đơn thành công!" });
+    }
+
+    // =========================================================
+    // THÊM MỚI TỪ ĐÂY
+    // =========================================================
+
+    /// <summary>Xóa đơn hàng của user hiện tại (Chỉ được xóa đơn Pending)</summary>
+    [HttpDelete("me/{id}")]
+    [Authorize] // Bất kỳ user nào đăng nhập cũng được dùng
+    public async Task<IActionResult> DeleteMyOrder(int id)
+    {
+        var customerIdClaim = User.Claims.FirstOrDefault(c => c.Type == "customer_id");
+        if (customerIdClaim == null || !int.TryParse(customerIdClaim.Value, out var customerId))
+            return Unauthorized(new { message = "Không có thông tin người dùng." });
+
+        // Tìm hóa đơn và kiểm tra xem hóa đơn này có phải của user đang đăng nhập không
+        var order = await _db.Orders
+            .Include(o => o.OrderDetails)
+            .FirstOrDefaultAsync(o => o.OrderId == id && o.CustomerId == customerId);
+
+        if (order == null) return NotFound(new { message = "Không tìm thấy hóa đơn của bạn." });
+
+        // Chỉ cho phép xóa đơn hàng đang chờ xử lý
+        if (order.Status != "Pending")
+            return BadRequest(new { message = "Bạn chỉ có thể xóa đơn hàng đang chờ xử lý." });
+
+        // Xóa chi tiết đơn hàng
         if (order.OrderDetails.Any())
             _db.Order_Details.RemoveRange(order.OrderDetails);
 
@@ -127,6 +163,17 @@ public class OrdersController : ControllerBase
 
         _db.Orders.Remove(order);
         await _db.SaveChangesAsync();
-        return Ok(new { message = "Xóa hóa đơn thành công!" });
+        return Ok(new { message = "Đã hủy và xóa đơn hàng thành công!" });
+    }
+
+    /// <summary>Xóa toàn bộ lịch sử đơn hàng (Chỉ Admin) - KHÔNG làm reset ID</summary>
+    [HttpDelete("clear-all")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ClearAllOrders()
+    {
+        // ExecuteDeleteAsync sẽ xóa sạch bảng Orders mà không ảnh hưởng tới ID đếm tự động
+        await _db.Orders.ExecuteDeleteAsync();
+        
+        return Ok(new { message = "Đã xóa toàn bộ lịch sử đơn hàng. ID tiếp theo sẽ tiếp tục tự động tăng." });
     }
 }

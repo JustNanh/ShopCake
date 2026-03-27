@@ -89,7 +89,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export async function getProducts(): Promise<Product[]> {
   const data = await request<any[]>("/api/products");
   
-  // 👇 DÒNG QUAN TRỌNG: In dữ liệu ra màn hình F12 để kiểm tra
   console.log("📦 Dữ liệu gốc từ Database trả về:", data);
   
   const mappedData = data.map(mapProduct);
@@ -133,6 +132,13 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
 
 export async function deleteOrder(orderId: number): Promise<any> {
   return await request<any>(`/api/orders/${orderId}`, {
+    method: "DELETE",
+  });
+}
+
+// THÊM MỚI: API xóa đơn hàng dành cho User
+export async function deleteMyOrder(orderId: number): Promise<any> {
+  return await request<any>(`/api/orders/me/${orderId}`, {
     method: "DELETE",
   });
 }

@@ -72,9 +72,9 @@ const CheckoutPage = () => {
         setOrderId(response.orderId);
         setShowPaymentModal(true);
       } else {
-        // COD - clear cart và navigate về trang chủ
+        // COD - clear cart và navigate về trang chủ hoặc lịch sử đơn hàng
         clearCart();
-        navigate("/");
+        navigate("/orders");
       }
     } catch (error: any) {
       console.error("Order error:", error);
@@ -145,7 +145,7 @@ const CheckoutPage = () => {
                 <option>Hóc Môn</option>
                 <option>Bình Dương</option>
                 <option>Củ Chi</option>
-                                <option>Quận 12</option>
+                <option>Quận 12</option>
               </select>
             </div>
           </div>
@@ -235,15 +235,16 @@ const CheckoutPage = () => {
         <PaymentModal
           orderId={orderId}
           totalAmount={total}
+          paymentMethod={form.payment} // Đã thêm props này để Modal biết đang chọn phương thức nào
           onClose={() => {
             setShowPaymentModal(false);
-            clearCart();
-            navigate("/");
+            navigate("/orders"); // Chuyển về trang lịch sử đơn hàng
           }}
           onSuccess={() => {
             setShowPaymentModal(false);
             clearCart();
-            navigate("/");
+            toast.success("Đã ghi nhận thanh toán, shop sẽ xác nhận sớm!");
+            navigate("/orders"); // Chuyển về trang lịch sử đơn hàng
           }}
         />
       )}

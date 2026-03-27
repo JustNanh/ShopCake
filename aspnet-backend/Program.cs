@@ -39,7 +39,12 @@ builder.Services.AddControllers()
     });
 // ──────────────────────────────────────────────────────────────────────
 
-builder.Services.AddCors(o => o.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+// ── Cấu hình CORS để React có thể gọi API được ──
+builder.Services.AddCors(o => o.AddPolicy("AllowAll", p => 
+    p.AllowAnyOrigin()
+     .AllowAnyMethod()
+     .AllowAnyHeader()
+));
 
 // ── Swagger ───────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
@@ -80,12 +85,14 @@ app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "QLBN API v1
 // ── Phục vụ hình ảnh tĩnh từ wwwroot folder ──
 app.UseStaticFiles();
 
+// ── Áp dụng cấu hình CORS (PHẢI NẰM TRƯỚC UseAuthorization) ──
 app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
-Console.WriteLine("🚀 ASP.NET Core QLBN API đang chạy!");
-app.Run("http://localhost:5001");
+Console.WriteLine("🚀 ASP.NET Core QLBN API đang chạy ở cổng http://localhost:5000!");
+app.Run("http://localhost:5000");

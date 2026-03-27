@@ -1,30 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Loader2, QrCode, CreditCard } from "lucide-react";
+import { Loader2, QrCode, CheckCircle2 } from "lucide-react";
 import { formatPrice } from "@/data/products";
-
-type PaymentMethod = "VNPay" | "Momo" | "Zalopay";
 
 interface PaymentModalProps {
   orderId: number;
   totalAmount: number;
+  paymentMethod: string; // Nhận từ CheckoutPage: "banking", "vnpay", "momo", "zalopay"
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const PaymentModal = ({ orderId, totalAmount, onClose, onSuccess }: PaymentModalProps) => {
-  const [method, setMethod] = useState<PaymentMethod>("VNPay");
-  const [loading, setLoading] = useState(false);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+const PaymentModal = ({ orderId, totalAmount, paymentMethod, onClose, onSuccess }: PaymentModalProps) => {
+  const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState(false);
+  const [paymentId, setPaymentId] = useState<number | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
+
+  // Lấy thông tin từ .env
+  const ACCOUNT_NAME = import.meta.env.VITE_ACCOUNT_NAME || "HNA";
+  const MOMO_ACCOUNT = import.meta.env.VITE_MOMO_ACCOUNT || "0902837825";
+  const QR_IMAGE_PATH = "/QR/momo.jpg";
+
+  useEffect(() => {
+    handleInitPayment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleInitPayment = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/payments/init", {
+      setInitError(null);
+
+      const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
+      
+      const response = await fetch(`${baseUrl}/api/payments/init`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -32,111 +43,189 @@ const PaymentModal = ({ orderId, totalAmount, onClose, onSuccess }: PaymentModal
         },
         body: JSON.stringify({
           orderId,
-          paymentMethod: method,
+          paymentMethod: paymentMethod,
         }),
       });
 
-      if (!response.ok) throw new Error("Khởi tạo thanh toán thất bại");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Khởi tạo thanh toán thất bại");
+      }
 
       const data = await response.json();
-      setQrCode(data.qrCode);
-      setPaymentUrl(data.paymentUrl);
+      
+      // Lưu payment ID để confirm thanh toán sau
+      if (data.paymentId) {
+        setPaymentId(data.paymentId);
+      }
+      console.log("Payment ID:", data.paymentId);
+
+      // Preload ảnh QR để kiểm tra ảnh có tồn tại không
+      const qrImageResponse = await fetch(QR_IMAGE_PATH);
+      if (!qrImageResponse.ok) {
+        throw new Error(
+          `❌ Không tìm thấy ảnh QR tại: ${QR_IMAGE_PATH}\n` +
+          `📁 Vui lòng lưu file momo.jpg vào thư mục: public/QR/momo.jpg`
+        );
+      }
+
+      console.log("✅ Ảnh QR đã load thành công!");
     } catch (error) {
       console.error("Payment error:", error);
-      alert("Lỗi: " + (error as Error).message);
+      setInitError((error as Error).message);
     } finally {
       setLoading(false);
     }
   };
 
-  const paymentMethods = [
-    { id: "VNPay", name: "VNPay", icon: "🏦", desc: "Thanh toán qua VNPay" },
-    { id: "Momo", name: "Momo", icon: "📱", desc: "Thanh toán qua Ví Momo" },
-    { id: "Zalopay", name: "Zalopay", icon: "🛒", desc: "Thanh toán qua Zalopay" },
-  ];
+  const isBanking = paymentMethod === "banking" || paymentMethod === "banktransfer";
+  const isMomo = paymentMethod === "momo";
+  const showStaticQr = isBanking || isMomo;
+
+  const handleConfirmPayment = async () => {
+    if (!paymentId) {
+      setInitError("Không tìm thấy ID giao dịch");
+      return;
+    }
+
+    try {
+      setConfirming(true);
+      const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
+
+      const response = await fetch(`${baseUrl}/api/payments/${paymentId}/confirm`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Xác nhận thanh toán thất bại");
+      }
+
+      const data = await response.json();
+      console.log("Payment confirmed:", data);
+      
+      // Gọi callback để reload danh sách đơn hàng
+      onSuccess();
+    } catch (error) {
+      console.error("Confirm payment error:", error);
+      setInitError((error as Error).message);
+    } finally {
+      setConfirming(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Chọn phương thức thanh toán</CardTitle>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardHeader className="border-b bg-muted/30">
+          <CardTitle className="text-center font-display text-xl">
+            Thanh toán đơn hàng #{orderId}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Hiển thị QR Code nếu đã khởi tạo */}
-          {qrCode && (
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center gap-3">
-                <QrCode className="h-8 w-8 text-primary" />
-                <h3 className="font-semibold text-center">Quét mã QR để thanh toán</h3>
-                <div className="bg-white p-3 rounded border-2 border-gray-200">
-                  {/* Hiển thị QR (base64) */}
-                  <img
-                    src={`data:image/png;base64,${qrCode}`}
-                    alt="QR Code"
-                    className="h-40 w-40"
-                  />
+        <CardContent className="space-y-6 pt-6">
+          
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-10 space-y-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-muted-foreground animate-pulse">Đang tạo giao dịch an toàn...</p>
+            </div>
+          ) : initError ? (
+            <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-center space-y-3">
+              <p className="font-semibold">⚠️ Có lỗi xảy ra!</p>
+              <p className="text-sm whitespace-pre-wrap">{initError}</p>
+              {initError.includes("Không tìm thấy ảnh QR") && (
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm text-yellow-800 mt-3">
+                  <p className="font-semibold mb-2">🔧 Cách khắc phục:</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Tạo thư mục: <code className="bg-white px-2 py-1 rounded">react.js-frontend/public/QR</code></li>
+                    <li>Lưu ảnh momo QR vào: <code className="bg-white px-2 py-1 rounded">momo.jpg</code></li>
+                    <li>Refresh trang và thử lại</li>
+                  </ol>
                 </div>
-                <p className="text-sm text-gray-600 text-center">
-                  Số tiền: <strong>{formatPrice(totalAmount)}</strong>
-                </p>
-              </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Hiển thị QR Code cho Chuyển khoản ngân hàng / Momo */}
+              {showStaticQr && (
+                <div className="bg-gray-50/50 p-6 rounded-xl border border-gray-100 flex flex-col items-center gap-4">
+                  <div className="flex items-center gap-2 text-primary font-medium">
+                    <QrCode className="h-6 w-6" />
+                    <span>{isMomo ? "Mở App Momo Quét Mã" : "Mở App Ngân Hàng Quét Mã"}</span>
+                  </div>
+                  
+                  <div className="bg-white p-3 rounded-2xl border-2 border-primary/20 shadow-sm relative group overflow-hidden">
+                    <img
+                      src={QR_IMAGE_PATH}
+                      alt="QR Code Thanh Toán"
+                      className="h-60 w-60 object-contain transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        console.error("Không tìm thấy ảnh QR:", QR_IMAGE_PATH);
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="text-center space-y-1">
+                    <p className="text-sm text-muted-foreground">Tổng số tiền cần thanh toán</p>
+                    <p className="text-2xl font-bold text-primary">{formatPrice(totalAmount)}</p>
+                  </div>
 
-              {/* Link thanh toán online */}
-              {paymentUrl && (
-                <a
-                  href={paymentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <Button className="w-full gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Thanh toán online ({method})
-                  </Button>
-                </a>
+                  {/* Hiển thị thông tin tài khoản */}
+                  <div className="w-full bg-gradient-to-r from-pink-50 to-purple-50 p-3 rounded-lg border border-pink-200 space-y-2">
+                    <p className="text-sm font-semibold text-gray-800">📱 Thông tin nhận tiền:</p>
+                    <div className="text-sm text-gray-700 space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Chủ tài khoản:</span>
+                        <span className="font-semibold">{ACCOUNT_NAME}</span>
+                      </div>
+                      {isMomo && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Số Momo:</span>
+                          <span className="font-semibold font-mono">{MOMO_ACCOUNT}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg flex gap-2 text-left w-full">
+                    <span>ℹ️</span>
+                    <span>{isMomo ? "Quét mã QR bằng ứng dụng Momo để thanh toán." : "Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự động xác nhận đơn hàng cho bạn."}</span>
+                  </div>
+                </div>
               )}
             </div>
           )}
 
-          {/* Chọn phương thức nếu chưa khởi tạo */}
-          {!qrCode && (
-            <>
-              <RadioGroup value={method} onValueChange={(val) => setMethod(val as PaymentMethod)}>
-                <div className="space-y-3">
-                  {paymentMethods.map((pm) => (
-                    <div key={pm.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                      <RadioGroupItem value={pm.id} id={pm.id} />
-                      <Label htmlFor={pm.id} className="flex-1 cursor-pointer">
-                        <div className="font-semibold">{pm.icon} {pm.name}</div>
-                        <div className="text-sm text-gray-600">{pm.desc}</div>
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </RadioGroup>
-
-              <div className="bg-blue-50 p-3 rounded-lg text-sm text-gray-700">
-                ℹ️ Hỗ trợ cả quét mã QR và thanh toán online
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button variant="outline" onClick={onClose} className="flex-1">
-                  Hủy
-                </Button>
-                <Button onClick={handleInitPayment} disabled={loading} className="flex-1 gap-2">
-                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Tiếp tục
-                </Button>
-              </div>
-            </>
-          )}
-
-          {/* Nút quay lại sau khi hiển thị QR */}
-          {qrCode && (
-            <Button variant="outline" onClick={onClose} className="w-full">
-              Đóng
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={onClose} className="flex-1" disabled={loading || confirming}>
+              Hủy / Đóng
             </Button>
-          )}
+            {(!loading && !initError && showStaticQr) && (
+              <Button 
+                onClick={handleConfirmPayment} 
+                disabled={confirming || !paymentId}
+                className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-400"
+              >
+                {confirming ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Đang xác nhận...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Đã thanh toán
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+          
         </CardContent>
       </Card>
     </div>
