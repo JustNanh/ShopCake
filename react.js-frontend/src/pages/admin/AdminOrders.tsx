@@ -97,7 +97,7 @@ const AdminOrders = () => {
           customer: o.customer?.fullName ?? o.customer?.fullName ?? "Khách hàng",
           email: o.customer?.email ?? "",
           items: o.orderDetails ?? [],
-          itemsSummary: o.orderDetails?.map((d: any) => `${d.product?.productName ?? d.productId} x${d.quantity}`).join(", ") ?? "",
+          itemsSummary: o.orderDetails?.map((d: any) => `${d.product?.name ?? d.product?.productName ?? d.productId} x${d.quantity}`).join(", ") ?? "",
           total: Number(o.totalAmount ?? o.total ?? 0),
           shippingFee: shippingFeeForMethod(o.shippingMethod),
           paymentMethod: o.paymentMethod ?? "cod",
@@ -178,7 +178,7 @@ const AdminOrders = () => {
             <TableRow>
               <TableHead>Mã đơn</TableHead>
               <TableHead>Khách hàng</TableHead>
-              <TableHead className="hidden lg:table-cell">Sản phẩm</TableHead>
+              <TableHead>Sản phẩm</TableHead>
               <TableHead>Tổng tiền</TableHead>
               <TableHead className="hidden md:table-cell">Ngày đặt</TableHead>
               <TableHead className="hidden sm:table-cell">Thanh toán</TableHead>
@@ -203,17 +203,17 @@ const AdminOrders = () => {
                       <p className="text-xs text-muted-foreground">{o.email}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell text-sm">
+                  <TableCell className="text-sm">
                     {o.items.length > 0 ? (
                       <div className="space-y-1">
                         {o.items.map((item: any, idx: number) => (
                           <div key={idx} className="text-xs">
-                            {item.product?.productName ?? "Sản phẩm"} x{item.quantity}
+                            {item.product?.name ?? item.product?.productName ?? "Sản phẩm"} x{item.quantity}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      "Chưa có sản phẩm"
+                      ""
                     )}
                   </TableCell>
                   <TableCell className="font-bold text-primary">{formatPrice(o.total)}</TableCell>

@@ -20,7 +20,12 @@ public class OrdersController : ControllerBase
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll() =>
-        Ok(await _db.Orders.Include(o => o.Customer).OrderByDescending(o => o.OrderDate).ToListAsync());
+        Ok(await _db.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.OrderDetails)           // Thêm dòng này để lấy chi tiết đơn
+                .ThenInclude(d => d.Product)        // Thêm dòng này để lấy thông tin sản phẩm
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync());
 
     /// <summary>Lấy danh sách sản phẩm đã được mua (Chỉ Admin)</summary>
     [HttpGet("stats/purchased-products")]

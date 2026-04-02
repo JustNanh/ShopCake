@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "@/components/ProductCard";
-import { getProducts } from "@/lib/api";
-import { Product, categories, flavors } from "@/data/products";
+import { getProducts, getCategories } from "@/lib/api";
+import { Product, categories as fallbackCategories, flavors } from "@/data/products";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -17,6 +17,7 @@ const MenuPage = () => {
   const categoryParam = searchParams.get("category") || "";
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<{id:string; name:string}[]>(fallbackCategories);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,21 +29,37 @@ const MenuPage = () => {
   const [sortBy, setSortBy] = useState("name-asc");
   const [filterOpen, setFilterOpen] = useState(false);
 
+  const normalizeCategoryId = (categoryName: string) => {
+    const cat = categoryName?.toLowerCase().trim() ?? "";
+    if (cat.includes("bánh kem") || cat.includes("bánh sinh nhật") || cat.includes("birthday")) return "birthday";
+    if (cat.includes("bánh mì") || cat.includes("bread")) return "bread";
+    if (cat.includes("cupcake")) return "cupcake";
+    if (cat.includes("bánh quy") || cat.includes("cookie")) return "cookie";
+    if (cat.includes("bánh ngọt") || cat.includes("pastry")) return "pastry";
+    return "pastry";
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const data = await getProducts();
+        const [data, cats] = await Promise.all([getProducts(), getCategories()]);
         setProducts(data);
-        
+        setCategoriesList(
+          (cats ?? []).map((cat: any) => ({
+            id: normalizeCategoryId(cat.categoryName ?? cat.name ?? ""),
+            name: cat.categoryName ?? cat.name ?? "Không tên",
+          }))
+        );
+
         // Tính toán khoảng giá từ sản phẩm thực
         if (data.length > 0) {
           const prices = data.map(p => p.price);
           const maxPrice = Math.max(...prices);
           const minPrice = Math.min(...prices);
-          setPriceRange([minPrice, Math.ceil(maxPrice * 1.1)]); // Thêm 10% buffer trên
+          setPriceRange([minPrice, Math.ceil(maxPrice * 1.1)]);
         }
-        
+
         setError(null);
       } catch (ex: any) {
         setError(ex.message || "Không thể tải sản phẩm");
@@ -107,7 +124,7 @@ const MenuPage = () => {
       <div>
         <h3 className="font-display text-sm font-semibold mb-3">Loại bánh</h3>
         <div className="space-y-2">
-          {categories.map((cat) => (
+          {(categoriesList.length > 0 ? categoriesList : fallbackCategories).map((cat) => (
             <div key={cat.id} className="flex items-center gap-2">
               <Checkbox
                 id={cat.id}

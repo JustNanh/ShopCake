@@ -128,6 +128,10 @@ export async function deleteProduct(id: number): Promise<any> {
   });
 }
 
+export async function getCategories(): Promise<any[]> {
+  return await request<any[]>('/api/categories');
+}
+
 export async function getOrders(): Promise<any[]> {
   return await request<any[]>('/api/orders');
 }

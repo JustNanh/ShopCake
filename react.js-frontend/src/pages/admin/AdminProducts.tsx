@@ -167,12 +167,14 @@ const AdminProducts = () => {
   const categoryLabel: Record<string, string> = {
     birthday: "Bánh sinh nhật",
     bread: "Bánh mì",
-    pastry: "Pastry",
+    pastry: "Bánh ngọt",
+    cupcake: "Cupcake",
+    cookie: "Bánh quy",
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-6 bg-slate-50 min-h-screen">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-3">
           <h1 className="text-2xl font-display font-bold text-foreground">Quản lý sản phẩm</h1>
           <div className="flex gap-2">
@@ -257,7 +259,9 @@ const AdminProducts = () => {
                 >
                   <option value="birthday">Bánh sinh nhật</option>
                   <option value="bread">Bánh mì</option>
-                  <option value="pastry">Pastry</option>
+                  <option value="pastry">Bánh ngọt</option>
+                  <option value="cupcake">Cupcake</option>
+                  <option value="cookie">Bánh quy</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -286,13 +290,13 @@ const AdminProducts = () => {
         />
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card shadow-sm">
         {loading ? (
           <div className="p-8 text-center text-primary">Đang tải danh sách sản phẩm...</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive">{error}</div>
         ) : viewMode === "all" ? (
-          <Table>
+          <Table className="min-w-full">
             <TableHeader>
               <TableRow>
                 <TableHead>Hình ảnh</TableHead>
@@ -312,7 +316,7 @@ const AdminProducts = () => {
                 </TableRow>
               ) : (
                 filtered.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className="hover:bg-muted/40 transition-colors">
                     <TableCell>
                       <ImageWithFallback
                         src={p.image || "https://via.placeholder.com/120x120?text=No+Image"}
@@ -360,7 +364,7 @@ const AdminProducts = () => {
                 </TableRow>
               ) : (
                 purchasedProducts.map((p) => (
-                  <TableRow key={p.productId}>
+                  <TableRow key={p.productId} className="hover:bg-muted/40 transition-colors">
                     <TableCell className="font-medium">{p.productName}</TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell>{formatPrice(p.price)}</TableCell>
