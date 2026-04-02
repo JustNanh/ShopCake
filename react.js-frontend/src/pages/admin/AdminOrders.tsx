@@ -179,19 +179,17 @@ const AdminOrders = () => {
               <TableHead>Mã đơn</TableHead>
               <TableHead>Khách hàng</TableHead>
               <TableHead className="hidden lg:table-cell">Sản phẩm</TableHead>
-              <TableHead>Tiền hàng</TableHead>
-              <TableHead className="hidden sm:table-cell">Phí giao</TableHead>
               <TableHead>Tổng tiền</TableHead>
               <TableHead className="hidden md:table-cell">Ngày đặt</TableHead>
               <TableHead className="hidden sm:table-cell">Thanh toán</TableHead>
               <TableHead>Trạng thái</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
+              <TableHead className="text-right">Thao tác</TableHead>  
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Chưa có đơn hàng nào
                 </TableCell>
               </TableRow>
@@ -205,28 +203,20 @@ const AdminOrders = () => {
                       <p className="text-xs text-muted-foreground">{o.email}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <div className="flex flex-wrap gap-2">
-                      {o.items.length > 0 ? (
-                        o.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex flex-col items-center">
-                            {item.product?.image ? (
-                              <img src={item.product.image} alt={item.product?.productName} className="h-12 w-12 rounded-md object-cover border" />
-                            ) : (
-                              <div className="h-12 w-12 rounded-md bg-gray-200 flex items-center justify-center text-xs text-gray-600">No Img</div>
-                            )}
-                            <span className="text-xs font-medium mt-1 max-w-[50px] text-center truncate">{item.product?.productName ?? "Sản phẩm"}</span>
-                            <span className="text-xs text-muted-foreground">x{item.quantity}</span>
+                  <TableCell className="hidden lg:table-cell text-sm">
+                    {o.items.length > 0 ? (
+                      <div className="space-y-1">
+                        {o.items.map((item: any, idx: number) => (
+                          <div key={idx} className="text-xs">
+                            {item.product?.productName ?? "Sản phẩm"} x{item.quantity}
                           </div>
-                        ))
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Chưa có sản phẩm</span>
-                      )}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      "Chưa có sản phẩm"
+                    )}
                   </TableCell>
-                  <TableCell className="font-semibold">{formatPrice(o.total)}</TableCell>
-                  <TableCell className="hidden sm:table-cell text-sm">{formatPrice(o.shippingFee)}</TableCell>
-                  <TableCell className="font-bold text-primary">{formatPrice(o.total + o.shippingFee)}</TableCell>
+                  <TableCell className="font-bold text-primary">{formatPrice(o.total)}</TableCell>
                   <TableCell className="hidden md:table-cell text-sm">{o.date}</TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${paymentMethodColor[o.paymentMethod] || "bg-gray-100 text-gray-800"}`}>
