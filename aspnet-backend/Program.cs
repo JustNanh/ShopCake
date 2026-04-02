@@ -1,0 +1,111 @@
+using System.Text;
+using System.Text.Json.Serialization; // Thêm dòng này để dùng ReferenceHandler
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using QLBN.Api.Data;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// THÊM DÒNG NÀY ĐỂ FIX LỖI IHttpClientFactory
+builder.Services.AddHttpClient(); 
+
+// ── Database ──────────────────────────────────────────────────
+builder.Services.AddDbContext<AppDbContext>(options =>
+// ... phần code còn lại giữ nguyên
+
+// ── Database ──────────────────────────────────────────────────
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ── JWT Authentication ────────────────────────────────────────
+var jwtSecret = builder.Configuration["Jwt:Secret"]!;
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// ── Đã sửa ở đây: Cấu hình JSON để tránh lỗi vòng lặp (Object Cycle) ──
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+// ──────────────────────────────────────────────────────────────────────
+
+// ── Cấu hình CORS để React có thể gọi API được ──
+builder.Services.AddCors(o => o.AddPolicy("AllowAll", p => 
+    p.AllowAnyOrigin()
+     .AllowAnyMethod()
+     .AllowAnyHeader()
+));
+
+// ── Swagger ───────────────────────────────────────────────────
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "QLBN API - Quản Lý Bánh Ngọt",
+        Version = "v1",
+        Description = "REST API cho hệ thống quản lý tiệm bánh ngọt (ASP.NET Core)"
+    });
+
+    // Cho phép nhập JWT token trong Swagger UI
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhập JWT token theo định dạng: Bearer {token}"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// ─────────────────────────────────────────────────────────────
+var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "QLBN API v1"));
+
+// ── Áp dụng migration tự động khi khởi động ──
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
+// ── Phục vụ hình ảnh tĩnh từ wwwroot folder ──
+app.UseStaticFiles();
+
+// ── Áp dụng cấu hình CORS (PHẢI NẰM TRƯỚC UseAuthorization) ──
+app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+app.MapGet("/", () => Results.Redirect("/swagger"));
+
+Console.WriteLine("🚀 ASP.NET Core QLBN API đang chạy ở cổng http://localhost:5000!");
+app.Run("http://localhost:5000");
