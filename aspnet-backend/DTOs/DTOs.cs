@@ -27,3 +27,10 @@ public record ReviewCreateDto(int ProductId, int Rating, string? Comment);
 
 // Customer
 public record CustomerUpdateDto(string FullName, string? Phone, string? Address, string? Gender);
+
+// ==========================================
+// THÊM 2 DÒNG NÀY ĐỂ FIX LỖI ORDERS CONTROLLER
+// ==========================================
+public record OrderDetailResponseDto(int DetailId, int ProductId, string ProductName, int Quantity, decimal PriceAtPurchase, string? ImageUrl);
+
+public record OrderResponseDto(int OrderId, int CustomerId, string? CustomerName, DateTime OrderDate, decimal TotalAmount, string Status, string? ShippingAddress, string? City, string? District, string? ShippingMethod, string? PaymentMethod, List<OrderDetailResponseDto> Items);

@@ -25,6 +25,28 @@ public class OrdersController : ControllerBase
             .Include(o => o.OrderDetails)           // Thêm dòng này để lấy chi tiết đơn
                 .ThenInclude(d => d.Product)        // Thêm dòng này để lấy thông tin sản phẩm
             .OrderByDescending(o => o.OrderDate)
+            // Ép sang DTO để tránh vòng lặp JSON
+            .Select(o => new OrderResponseDto(
+                o.OrderId,
+                o.CustomerId,
+                o.Customer != null ? o.Customer.FullName : null,
+                o.OrderDate,
+                o.TotalAmount,
+                o.Status,
+                o.ShippingAddress,
+                o.City,
+                o.District,
+                o.ShippingMethod,
+                o.PaymentMethod,
+                o.OrderDetails.Select(d => new OrderDetailResponseDto(
+                    d.DetailId,
+                    d.ProductId,
+                    d.Product != null ? d.Product.ProductName : "",
+                    d.Quantity,
+                    d.PriceAtPurchase,
+                    d.Product != null ? d.Product.ImageUrl : ""
+                )).ToList()
+            ))
             .ToListAsync());
 
     /// <summary>Lấy danh sách sản phẩm đã được mua (Chỉ Admin)</summary>
@@ -69,6 +91,28 @@ public class OrdersController : ControllerBase
             .Where(o => o.CustomerId == customerId)
             .Include(o => o.OrderDetails).ThenInclude(d => d.Product)
             .OrderByDescending(o => o.OrderDate)
+            // Ép sang DTO để tránh vòng lặp JSON
+            .Select(o => new OrderResponseDto(
+                o.OrderId,
+                o.CustomerId,
+                null,
+                o.OrderDate,
+                o.TotalAmount,
+                o.Status,
+                o.ShippingAddress,
+                o.City,
+                o.District,
+                o.ShippingMethod,
+                o.PaymentMethod,
+                o.OrderDetails.Select(d => new OrderDetailResponseDto(
+                    d.DetailId,
+                    d.ProductId,
+                    d.Product != null ? d.Product.ProductName : "",
+                    d.Quantity,
+                    d.PriceAtPurchase,
+                    d.Product != null ? d.Product.ImageUrl : ""
+                )).ToList()
+            ))
             .ToListAsync();
 
         return Ok(orders);
@@ -79,9 +123,33 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetById(int id)
     {
         var order = await _db.Orders
+            .Where(o => o.OrderId == id)
             .Include(o => o.Customer)
             .Include(o => o.OrderDetails).ThenInclude(d => d.Product)
-            .FirstOrDefaultAsync(o => o.OrderId == id);
+            // Ép sang DTO để tránh vòng lặp JSON
+            .Select(o => new OrderResponseDto(
+                o.OrderId,
+                o.CustomerId,
+                o.Customer != null ? o.Customer.FullName : null,
+                o.OrderDate,
+                o.TotalAmount,
+                o.Status,
+                o.ShippingAddress,
+                o.City,
+                o.District,
+                o.ShippingMethod,
+                o.PaymentMethod,
+                o.OrderDetails.Select(d => new OrderDetailResponseDto(
+                    d.DetailId,
+                    d.ProductId,
+                    d.Product != null ? d.Product.ProductName : "",
+                    d.Quantity,
+                    d.PriceAtPurchase,
+                    d.Product != null ? d.Product.ImageUrl : ""
+                )).ToList()
+            ))
+            .FirstOrDefaultAsync();
+            
         return order == null ? NotFound(new { message = "Không tìm thấy hóa đơn." }) : Ok(order);
     }
 
