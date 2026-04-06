@@ -4,9 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using QLBN.Api.Data;
 using QLBN.Api.DTOs;
 using QLBN.Api.Models;
-using System.Security.Cryptography;
-using System.Text;
-using QRCoder;
+using System.Linq;
 
 namespace QLBN.Api.Controllers;
 
@@ -53,13 +51,13 @@ public class PaymentController : ControllerBase
         {
             OrderId = order.OrderId,
             Amount = order.TotalAmount,
-            PaymentMethod = dto.PaymentMethod, 
+            PaymentMethod = dto.PaymentMethod,
             PaymentDate = DateTime.Now
         };
         _db.Payments.Add(payment);
         await _db.SaveChangesAsync();
 
-        // Trả về thành công cho cả Banking và Momo
+        // Trả về thành công cho Banking, Momo và các phương thức nội bộ khác
         return Ok(new
         {
             message = "Khởi tạo thanh toán thành công!",
@@ -89,50 +87,35 @@ public class PaymentController : ControllerBase
         });
     }
 
-    /// <summary>Xác nhận thanh toán hoàn tất (Cập nhật Order status)</summary>
-    [HttpPost("{paymentId}/confirm"), Authorize]
-    public async Task<IActionResult> ConfirmPayment(int paymentId)
+    /// <summary>Tạo checkout form cho Sepay Payment Gateway</summary>
+    [HttpPost("sepay-pg/checkout"), Authorize]
+    public async Task<IActionResult> CreateSepayPgCheckout([FromBody] object dto)
     {
-        var payment = await _db.Payments.Include(p => p.Order)
-            .FirstOrDefaultAsync(p => p.PaymentId == paymentId);
-        
-        if (payment == null)
-            return NotFound(new { message = "Không tìm thấy giao dịch." });
+        return NotFound(new { message = "Sepay Payment Gateway đã bị xóa. Vui lòng sử dụng Banking hoặc Momo." });
+    }
 
-        var order = payment.Order;
-        if (order == null)
-            return BadRequest(new { message = "Không tìm thấy đơn hàng liên kết." });
 
-        // Ngăn confirm lại nếu đã xử lý
-        if (order.Status != "Pending")
-            return BadRequest(new { message = $"Đơn hàng đã ở trạng thái '{order.Status}', không thể confirm thanh toán." });
+    private string GenerateSepayPgSignature(Dictionary<string, string> formFields, string secretKey)
+    {
+        // DEPRECATED: Sepay Payment Gateway has been removed
+        return string.Empty;
+    }
 
-        // Cập nhật trạng thái đơn hàng thành "Processing"
-        order.Status = "Processing";
-        await _db.SaveChangesAsync();
+    /// <summary>Xử lý callback từ Sepay PG (webhook) - DEPRECATED</summary>
+    [HttpPost("sepay-pg/callback")]
+    public async Task<IActionResult> SepayPgCallback([FromForm] object callback)
+    {
+        return NotFound(new { success = false, message = "Sepay Payment Gateway đã bị xóa." });
+    }
 
-        return Ok(new
-        {
-            message = "Thanh toán đã được xác nhận! Đơn hàng đang được xử lý.",
-            paymentId = payment.PaymentId,
-            orderId = order.OrderId,
-            newStatus = order.Status
-        });
+    private bool VerifySepayPgSignature(object callback, string secretKey)
+    {
+        // DEPRECATED: Sepay Payment Gateway has been removed
+        return false;
     }
 
 
 
-
-
-    // ─── Hàm hỗ trợ ───
-    
-    private string CreateSHA256(string data)
-    {
-        using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(data);
-        var hash = sha256.ComputeHash(bytes);
-        return BitConverter.ToString(hash).Replace("-", "").ToLower();
-    }
 }
 
 // ─── DTOs ───

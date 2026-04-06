@@ -45,9 +45,9 @@ const statuses = ["Đang xử lý", "Đang giao", "Đã giao", "Đã hủy"];
 
 const shippingFeeForMethod = (method: string | null | undefined) => {
   if (!method) return 0;
-  if (method.toLowerCase().includes("express")) return 10000;
-  if (method.toLowerCase().includes("standard")) return 20000;
-  return 20000;
+  if (method.toLowerCase().includes("express")) return 1000;
+  if (method.toLowerCase().includes("standard")) return 2000;
+  return 2000;
 };
 
 const mapPaymentDisplay = (method: string | null | undefined) => {
@@ -92,19 +92,24 @@ const AdminOrders = () => {
     const loadOrders = async () => {
       try {
         const data = await getOrders();
-        const normalized = data.map((o: any) => ({
-          id: String(o.orderId ?? o.id),
-          customer: o.customer?.fullName ?? o.customer?.fullName ?? "Khách hàng",
-          email: o.customer?.email ?? "",
-          items: o.orderDetails ?? [],
-          itemsSummary: o.orderDetails?.map((d: any) => `${d.product?.name ?? d.product?.productName ?? d.productId} x${d.quantity}`).join(", ") ?? "",
-          total: Number(o.totalAmount ?? o.total ?? 0),
-          shippingFee: shippingFeeForMethod(o.shippingMethod),
-          paymentMethod: o.paymentMethod ?? "cod",
-          status: mapStatusToUI(o.status ?? "Pending"),
-          rawStatus: o.status ?? "Pending",
-          date: new Date(o.orderDate ?? o.orderDate).toLocaleString("vi-VN"),
-        }));
+        const normalized = data.map((o: any) => {
+          const orderTotal = Number(o.totalAmount ?? o.total ?? 0);
+          const shippingFee = shippingFeeForMethod(o.shippingMethod);
+
+          return {
+            id: String(o.orderId ?? o.id),
+            customer: o.customerName ?? "Khách hàng",
+            email: "", // API không trả về email trong danh sách đơn hàng
+            items: o.items ?? [],
+            itemsSummary: o.items?.map((d: any) => `${d.productName ?? d.productId} x${d.quantity}`).join(", ") ?? "",
+            total: orderTotal + shippingFee,
+            shippingFee,
+            paymentMethod: o.paymentMethod ?? "cod",
+            status: mapStatusToUI(o.status ?? "Pending"),
+            rawStatus: o.status ?? "Pending",
+            date: new Date(o.orderDate ?? o.orderDate).toLocaleString("vi-VN"),
+          };
+        });
         setOrders(normalized);
       } catch (error) {
         console.error("Lấy đơn hàng thất bại", error);
@@ -208,7 +213,7 @@ const AdminOrders = () => {
                       <div className="space-y-1">
                         {o.items.map((item: any, idx: number) => (
                           <div key={idx} className="text-xs">
-                            {item.product?.name ?? item.product?.productName ?? "Sản phẩm"} x{item.quantity}
+                            {item.productName ?? "Sản phẩm"} x{item.quantity}
                           </div>
                         ))}
                       </div>

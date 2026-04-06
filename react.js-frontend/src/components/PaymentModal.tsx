@@ -17,6 +17,7 @@ const PaymentModal = ({ orderId, totalAmount, paymentMethod, onClose, onSuccess 
   const [confirming, setConfirming] = useState(false);
   const [paymentId, setPaymentId] = useState<number | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
 
   // Lấy tên chủ tài khoản từ .env hoặc mặc định
   const ACCOUNT_NAME = import.meta.env.VITE_ACCOUNT_NAME || "Huỳnh Ngọc Anh";
@@ -52,6 +53,7 @@ const PaymentModal = ({ orderId, totalAmount, paymentMethod, onClose, onSuccess 
 
       const data = await response.json();
       if (data.paymentId) setPaymentId(data.paymentId);
+      if (data.qrImageUrl) setQrUrl(data.qrImageUrl);
     } catch (error) {
       console.error("Payment error:", error);
       setInitError((error as Error).message);
@@ -91,7 +93,7 @@ const PaymentModal = ({ orderId, totalAmount, paymentMethod, onClose, onSuccess 
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="border-b bg-muted/30">
           <CardTitle className="text-center font-display text-xl">
-            Thanh toán VietQR - Đơn hàng #{orderId}
+            {`Thanh toán VietQR - Đơn hàng #${orderId}`}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
@@ -111,15 +113,15 @@ const PaymentModal = ({ orderId, totalAmount, paymentMethod, onClose, onSuccess 
                   <QrCode className="h-6 w-6" />
                   <span>Mở App Ngân Hàng Quét Mã</span>
                 </div>
-                
+
                 <div className="bg-white p-3 rounded-2xl border-2 border-primary/20 shadow-sm relative group overflow-hidden">
                   <img
-                    src={vietQrUrl}
+                    src={qrUrl ?? vietQrUrl}
                     alt="VietQR Code"
                     className="h-60 w-60 object-contain transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
-                
+
                 <div className="text-center space-y-1">
                   <p className="text-sm text-muted-foreground">Số tiền thanh toán</p>
                   <p className="text-2xl font-bold text-primary">{formatPrice(totalAmount)}</p>

@@ -6,10 +6,13 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import LoginPromptDialog from "@/components/LoginPromptDialog";
 import PaymentModal from "@/components/PaymentModal";
 import { formatPrice } from "@/data/products";
-import { createOrder, getCustomer, updateCustomer } from "@/lib/api";
+import { createOrder, deleteMyOrder, getCustomer, updateCustomer } from "@/lib/api";
 import { toast } from "sonner";
 
-const shippingFee = 2000;
+const getShippingFee = (shippingMethod: string) => {
+  if (shippingMethod === "express") return 1000;
+  return 2000;
+};
 
 const CheckoutPage = () => {
   const { items, totalPrice, clearCart } = useCartStore();
@@ -102,7 +105,7 @@ const CheckoutPage = () => {
       }
       
       // Nếu thanh toán online (không phải COD), hiển thị PaymentModal
-      if (form.payment === "banking" || form.payment === "vnpay" || form.payment === "momo" || form.payment === "zalopay") {
+      if (form.payment === "banking") {
         setOrderId(response.orderId);
         setShowPaymentModal(true);
       } else {
@@ -127,6 +130,7 @@ const CheckoutPage = () => {
     );
   }
 
+  const shippingFee = getShippingFee(form.shipping);
   const total = totalPrice() + shippingFee;
 
   return (
@@ -258,9 +262,19 @@ const CheckoutPage = () => {
           orderId={orderId}
           totalAmount={total}
           paymentMethod={form.payment} // Đã thêm props này để Modal biết đang chọn phương thức nào
-          onClose={() => {
-            setShowPaymentModal(false);
-            navigate("/orders"); // Chuyển về trang lịch sử đơn hàng
+          onClose={async () => {
+            try {
+              // Xóa đơn hàng Pending của user khi hủy thanh toán
+              await deleteMyOrder(orderId);
+              toast.error("Đơn hàng đã được hủy!");
+            } catch (error) {
+              console.error("Lỗi khi hủy đơn hàng:", error);
+              toast.error("Có lỗi xảy ra khi hủy đơn hàng");
+            } finally {
+              setShowPaymentModal(false);
+              // Khi hủy thanh toán, quay về trang checkout thay vì trang orders
+              // Không clear cart để khách có thể thử lại
+            }
           }}
           onSuccess={() => {
             setShowPaymentModal(false);

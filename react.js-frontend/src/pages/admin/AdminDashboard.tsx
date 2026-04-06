@@ -22,6 +22,13 @@ const statusLabel: Record<string, string> = {
   "Cancelled": "Đã hủy",
 };
 
+const shippingFeeForMethod = (method: string | null | undefined) => {
+  if (!method) return 0;
+  if (method.toLowerCase().includes("express")) return 1000;
+  if (method.toLowerCase().includes("standard")) return 2000;
+  return 2000;
+};
+
 const AdminDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -45,7 +52,7 @@ const AdminDashboard = () => {
     loadData();
   }, []);
 
-  // Tính toán stats - chỉ tính từ đơn hàng đã giao (Delivered)
+  // Tính toán stats dựa trên orders thực tế
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   const monthlyOrders = orders.filter(o => {
@@ -53,25 +60,27 @@ const AdminDashboard = () => {
     return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
   });
   const deliveredOrders = orders.filter(o => o.status === "Delivered");
+  const pendingOrders = orders.filter(o => o.status === "Pending");
+  const cancelledOrders = orders.filter(o => o.status === "Cancelled");
   const deliveredThisMonth = monthlyOrders.filter(o => o.status === "Delivered");
-  const monthlyRevenue = deliveredThisMonth.reduce((sum, o) => sum + o.totalAmount, 0);
+  const monthlyRevenue = deliveredThisMonth.reduce((sum, o) => sum + Number(o.totalAmount ?? 0), 0);
 
   const stats = [
     { label: "Doanh thu tháng", value: formatPrice(monthlyRevenue), icon: DollarSign, change: `(${deliveredThisMonth.length}/${monthlyOrders.length} đơn)` },
-    { label: "Đơn hàng", value: deliveredOrders.length.toString(), icon: ShoppingCart, change: `trên ${orders.length} tổng` },
-    { label: "Sản phẩm", value: products.length.toString(), icon: Package, change: "" },
-    { label: "Tăng trưởng", value: "0%", icon: TrendingUp, change: "" },
+    { label: "Tổng đơn hàng", value: orders.length.toString(), icon: ShoppingCart, change: `Pending: ${pendingOrders.length}` },
+    { label: "Đã giao", value: deliveredOrders.length.toString(), icon: Package, change: `Hủy: ${cancelledOrders.length}` },
+    { label: "Sản phẩm", value: products.length.toString(), icon: TrendingUp, change: "" },
   ];
 
-  // Tính revenueData theo tháng - chỉ tính từ đơn hàng đã giao
+  // Tính revenueData theo tháng từ đơn hàng đã giao
   const revenueData = deliveredOrders.reduce((acc, order) => {
     const date = new Date(order.orderDate);
     const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
     const existing = acc.find(d => d.month === month);
     if (existing) {
-      existing.revenue += order.totalAmount;
+      existing.revenue += Number(order.totalAmount ?? 0);
     } else {
-      acc.push({ month, revenue: order.totalAmount });
+      acc.push({ month, revenue: Number(order.totalAmount ?? 0) });
     }
     return acc;
   }, [] as { month: string; revenue: number }[]).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
@@ -79,7 +88,7 @@ const AdminDashboard = () => {
   // Recent orders - hiển thị đơn hàng gần đây (tất cả trạng thái)
   const recentOrders = orders.slice(0, 5).map(order => ({
     id: order.orderId.toString(),
-    customer: order.customer?.fullName || "Unknown",
+    customer: order.customerName || "Khách hàng",
     total: order.totalAmount,
     status: statusLabel[order.status] || order.status,
   }));
